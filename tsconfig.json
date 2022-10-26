@@ -1,0 +1,12 @@
+{
+   "compilerOptions": {
+        "target": "es5",
+        "esModuleInterop": true,
+        "noImplicitAny": false,
+        "sourceMap": true,
+        "outDir": "scripts/"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

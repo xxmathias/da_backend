@@ -1,9 +1,15 @@
-import express from "express";
+import express, { Request, Response} from "express";
 import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
+import { User } from './index.interface'
 import mysql2 from 'mysql2';
+import { checkAuthentication } from "./utils/dbTools";
+import session, { Session, SessionData } from 'express-session';
 
+interface UserSession extends Session {
+  user?: { id: number, name: string };
+}
 
 var connection = mysql2.createConnection({
   host: '100.103.227.61',
@@ -48,6 +54,11 @@ let messages :Imessage[] = [
 const app = express();
 app.set("port", process.env.PORT || 8080);
 app.use(cors())
+app.use(session({
+  secret: 'your_secret_key_here', // this should be a random string
+  resave: false,
+  saveUninitialized: false,
+}));
 
 
 let http = require("http").Server(app);
@@ -55,12 +66,24 @@ let http = require("http").Server(app);
 // http server.
 let io = require("socket.io")(http);
 
-app.get("/", (req: any, res: any) => {
+app.get("/", (req: Request, res: Response) => {
   res.sendFile(path.resolve("./client/index.html"));
 });
-app.get("/getMessages", (req:any, res: any)=>{
+app.get("/getMessages", (req: Request, res: Response)=>{
   res.send({items: messages});
 })
+app.post('/login', (req: Request, res: Response) => {
+  // check if the user is authenticated
+  if (checkAuthentication()) {
+    // set user data in the session
+    const user: User = { id: 123, name: 'John' };
+    req.session.user = user;
+    res.send('Logged in successfully!');
+  } else {
+    res.status(401).send('Invalid credentials');
+  }
+});
+
 
 // whenever a user connects on port 3000 via
 // a websocket, log that a user has connected

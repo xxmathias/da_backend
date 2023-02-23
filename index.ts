@@ -1,8 +1,26 @@
 import express from "express";
 import socketio from "socket.io";
 import path from "path";
-import cors from 'cors'
+import cors from 'cors';
+import mysql2 from 'mysql2';
 
+
+var connection = mysql2.createConnection({
+  host: '100.103.227.61',
+  user: 'user',
+  password: 'password',
+  database: 'test'
+})
+
+connection.connect()
+
+connection.query('SELECT 1 + 1 AS solution', function (err, rows, fields) {
+  if (err) throw err
+
+  console.log('The solution is: ', rows[0].solution)
+})
+
+connection.end()
 
 interface Imessage{
   sender: string;

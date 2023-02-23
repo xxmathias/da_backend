@@ -1,7 +1,52 @@
-import express from "express";
+import express, { Request, Response} from "express";
 import socketio from "socket.io";
 import path from "path";
-import cors from 'cors'
+import cors from 'cors';
+import { User } from './index.interface'
+import mysql2 from 'mysql2';
+import { checkAuthentication } from "./utils/dbTools";
+import session, { Session, SessionData } from 'express-session';
+
+interface UserSession extends Session {
+  user?: { id: number, name: string };
+}
+
+declare module "express-session" {
+  interface SessionData {
+    user: User;
+  }
+}
+
+
+var connection = mysql2.createConnection({
+  host: '100.103.227.61',
+  user: 'diplom',
+  password: 'password',
+  database: 'test'
+})
+
+connection.connect()
+
+connection.query('SELECT 1 + 1 AS solution', function (err, rows, fields) {
+  if (err) throw err
+  console.log('The solution is: ', rows[0].solution)
+})
+
+// create tables with foreign keys
+connection.execute('CREATE TABLE IF NOT EXISTS users ( id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, username VARCHAR(256), password VARCHAR(32) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
+
+connection.execute('CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,name VARCHAR(256),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
+
+connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
+
+
+connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
+
+connection.query('SELECT * from users',[], (err, results) => {
+    console.log(results);
+  }
+);
+
 
 
 interface Imessage{
@@ -18,6 +63,11 @@ let messages :Imessage[] = [
 const app = express();
 app.set("port", process.env.PORT || 8080);
 app.use(cors())
+app.use(session({
+  secret: 'your_secret_key_here', // this should be a random string
+  resave: false,
+  saveUninitialized: false,
+}));
 
 
 let http = require("http").Server(app);
@@ -25,12 +75,24 @@ let http = require("http").Server(app);
 // http server.
 let io = require("socket.io")(http);
 
-app.get("/", (req: any, res: any) => {
+app.get("/", (req: Request, res: Response) => {
   res.sendFile(path.resolve("./client/index.html"));
 });
-app.get("/getMessages", (req:any, res: any)=>{
+app.get("/getMessages", (req: Request, res: Response)=>{
   res.send({items: messages});
 })
+app.post('/login', (req: Request, res: Response) => {
+  // check if the user is authenticated
+  if (checkAuthentication()) {
+    // set user data in the session
+    const user: User = { id: 123, name: 'John' };
+    req.session.user = user;
+    res.send('Logged in successfully!');
+  } else {
+    res.status(401).send('Invalid credentials');
+  }
+});
+
 
 // whenever a user connects on port 3000 via
 // a websocket, log that a user has connected

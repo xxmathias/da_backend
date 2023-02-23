@@ -2,10 +2,10 @@ import express, { Request, Response} from "express";
 import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
-import { User } from './index.interface'
-import mysql2 from 'mysql2';
-import { checkAuthentication } from "./utils/dbTools";
 import session, { Session, SessionData } from 'express-session';
+import connection from './utils/database/database_con'
+import { validateCredentials } from "./utils/dbTools";
+import { User } from './index.interface'
 
 interface UserSession extends Session {
   user?: { id: number, name: string };
@@ -16,14 +16,6 @@ declare module "express-session" {
     user: User;
   }
 }
-
-
-var connection = mysql2.createConnection({
-  host: '100.103.227.61',
-  user: 'diplom',
-  password: 'password',
-  database: 'test'
-})
 
 connection.connect()
 
@@ -41,13 +33,6 @@ connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY 
 
 
 connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
-
-connection.query('SELECT * from users',[], (err, results) => {
-    console.log(results);
-  }
-);
-
-
 
 interface Imessage{
   sender: string;
@@ -76,20 +61,29 @@ let http = require("http").Server(app);
 let io = require("socket.io")(http);
 
 app.get("/", (req: Request, res: Response) => {
-  res.sendFile(path.resolve("./client/index.html"));
+  const user: User = { id: 1, name: 'timy', email: 'timothy.djon@gmail.com', password: 'passwod'};
+  if (validateCredentials(user)) {
+    // set user data in the session
+    req.session.user = user;
+    res.send('Logged in successfully!');
+  } else {
+    res.status(401).send('Invalid credentials');
+    console.log("Failed")
+  }
 });
 app.get("/getMessages", (req: Request, res: Response)=>{
   res.send({items: messages});
 })
 app.post('/login', (req: Request, res: Response) => {
   // check if the user is authenticated
-  if (checkAuthentication()) {
+  const user: User = { id: 1, name: 'timy', email: 'timothy.djon@gmail.com', password: 'password'};
+  if (validateCredentials(user)) {
     // set user data in the session
-    const user: User = { id: 123, name: 'John' };
     req.session.user = user;
     res.send('Logged in successfully!');
   } else {
     res.status(401).send('Invalid credentials');
+    console.log("Failed")
   }
 });
 

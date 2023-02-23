@@ -7,7 +7,7 @@ import mysql2 from 'mysql2';
 
 var connection = mysql2.createConnection({
   host: '100.103.227.61',
-  user: 'user',
+  user: 'diplom',
   password: 'password',
   database: 'test'
 })

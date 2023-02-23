@@ -11,6 +11,13 @@ interface UserSession extends Session {
   user?: { id: number, name: string };
 }
 
+declare module "express-session" {
+  interface SessionData {
+    user: User;
+  }
+}
+
+
 var connection = mysql2.createConnection({
   host: '100.103.227.61',
   user: 'diplom',
@@ -39,6 +46,8 @@ connection.query('SELECT * from users',[], (err, results) => {
     console.log(results);
   }
 );
+
+
 
 interface Imessage{
   sender: string;

@@ -64,8 +64,9 @@ let messages :Imessage[] = [
 const app = express();
 app.set("port", process.env.PORT || 8080);
 // app.use(cors())
+const allowedDomains = ['http://localhost:3000','http://100.103.227.61:3000']
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://100.103.227.61:3000'],
+  origin: allowedDomains,
   credentials: true
 }));
 app.use(session({

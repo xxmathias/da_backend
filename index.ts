@@ -6,6 +6,7 @@ import { User } from './index.interface'
 import mysql2 from 'mysql2';
 import { checkAuthentication } from "./utils/dbTools";
 import session, { Session, SessionData } from 'express-session';
+import bodyParser from 'body-parser';
 
 interface UserSession extends Session {
   user?: { id: number, name: string };
@@ -62,13 +63,21 @@ let messages :Imessage[] = [
 
 const app = express();
 app.set("port", process.env.PORT || 8080);
-app.use(cors())
+// app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 app.use(session({
   secret: 'your_secret_key_here', // this should be a random string
   resave: false,
   saveUninitialized: false,
+  cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: false
+    },
 }));
-
+app.use(bodyParser.json())
 
 let http = require("http").Server(app);
 // set up socket.io and bind it to our
@@ -81,17 +90,46 @@ app.get("/", (req: Request, res: Response) => {
 app.get("/getMessages", (req: Request, res: Response)=>{
   res.send({items: messages});
 })
-app.post('/login', (req: Request, res: Response) => {
-  // check if the user is authenticated
+
+
+app.post('/login', (req, res) => {
+  const { id, username, password, email } = req.body;
+
+  // Check authentication
   if (checkAuthentication()) {
-    // set user data in the session
-    const user: User = { id: 123, name: 'John' };
+    // Set user data in the session
+    const user = { id, username, password, email };
     req.session.user = user;
-    res.send('Logged in successfully!');
+    res.json({ message: 'Logged in successfully!', user });
   } else {
-    res.status(401).send('Invalid credentials');
+    res.status(401).json({ message: 'Invalid credentials' });
   }
 });
+
+
+app.post('/getSession', (req, res) => {
+  const user = req.session.user;
+  if (user) {
+    res.json({ message: 'Logged in!', user });
+  } else {
+    res.status(401).json({ message: 'Not logged In' });
+  }  
+});
+
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Error destroying session' });
+    } else {
+      res.clearCookie('session'); // clear the cookie from the client
+      res.status(200).json({ message: 'Session destroyed' });
+    }
+  });
+});
+
+
+
 
 
 // whenever a user connects on port 3000 via

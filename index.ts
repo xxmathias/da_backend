@@ -109,6 +109,7 @@ app.post('/login', (req, res) => {
 
 
 app.post('/getSession', (req, res) => {
+    res.set('Access-Control-Allow-Origin', ['http://localhost:3000', 'http://100.103.227.61:3000']);
   const user = req.session.user;
   if (user) {
     res.json({ message: 'Logged in!', user });

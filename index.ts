@@ -3,8 +3,7 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session, { Session, SessionData } from 'express-session';
-import * as mysql from 'mysql2/promise';
-import { connection, createUser, validateCredentials, getUserById, getUsers } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail } from './utils/database/dbTools'
 import { User } from './index.interface'
 import bodyParser from 'body-parser';
 
@@ -17,8 +16,6 @@ declare module "express-session" {
     user: User;
   }
 }
-
-//connection.connect()
 
 // create tables with foreign keys
 connection.execute('CREATE TABLE IF NOT EXISTS users ( id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, username VARCHAR(256), password VARCHAR(32) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
@@ -65,8 +62,6 @@ app.get("/", async (req: Request, res: Response) => {
   const user: User = { username: 'timy', email: 'timothy.djon@gmail.com', password: 'password', is_admin: 1};
   const user2: User = { username: 'timy2', email: 'timothy.djoon@gmail.com', password: 'password', is_admin: 1};
 
-
-
   const promGetUsers = new Promise((resolve, reject) => {
     resolve(getUsers());
   });
@@ -76,15 +71,16 @@ app.get("/", async (req: Request, res: Response) => {
       //console.log(`${result[i].username}`);
     }
   })
-
+/* 
   const promGetUserById = new Promise((resolve, reject) => {
     resolve(getUserById(1));
   });
   promGetUserById.then((result: User) => {
     const user: User = result;
     console.log(user)
-  })
+  }) */
 
+  res.send("hi")
 });
 
 
@@ -95,7 +91,7 @@ app.get("/getMessages", (req: Request, res: Response)=>{
 
 app.post('/login', (req: Request, res: Response) => {
   const { password, email } = req.body;
-  const user = { password, email };
+  let user = { password, email };
 
 
   const promiseValidation = new Promise((resolve, reject) => {
@@ -108,11 +104,18 @@ app.post('/login', (req: Request, res: Response) => {
       console.log("Failed")
   } else {
     // set user data in the session
-    req.session.user = user;
-    res.json({ message: 'Logged in successfully!', user }); 
+    const promGetUserByMail = new Promise((resolve, reject) => {
+      resolve(getUserByMail(user.email));
+    });
+    promGetUserByMail.then((result: User) => {
+      const user: User = result;
+      console.log("u: " ,user)
+      req.session.user = user;
+      res.json({ message: 'Logged in successfully!', user }); 
+    })
+    
   }
   });
-
 });
 
 
@@ -136,9 +139,6 @@ app.post('/logout', (req, res) => {
     }
   });
 });
-
-
-
 
 
 // whenever a user connects on port 3000 via

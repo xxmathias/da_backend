@@ -63,7 +63,18 @@ export async function getUserById(id: number): Promise<User | null> {
   }
   return rows[0] as User;
 }
+
+export async function getUserByMail(email: string): Promise<User | null> {
+  const [rows] = await connection.execute("SELECT * FROM users WHERE email = ?", [
+    email,
+  ]);
+  if (!rows) {
+    return null;
+  }
+  return rows[0] as User;
+}
 // ALL WORK TILL HERE
+
 
 export async function createChat(newChat: Chat): Promise<Chat> {
   const [result] = await connection.execute(

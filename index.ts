@@ -6,6 +6,7 @@ import session, { Session, SessionData } from 'express-session';
 import * as mysql from 'mysql2/promise';
 import { connection, createUser, validateCredentials, getUserById, getUsers } from './utils/database/dbTools'
 import { User } from './index.interface'
+import bodyParser from 'body-parser';
 
 interface UserSession extends Session {
   user?: { id: number, name: string };
@@ -38,13 +39,22 @@ let messages :Imessage[] = [
 
 const app = express();
 app.set("port", process.env.PORT || 8080);
-app.use(cors())
+// app.use(cors())
+const allowedDomains = ['http://localhost:3000','http://100.103.227.61:3000', 'http://0.0.0.0:3000']
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(session({
   secret: 'your_secret_key_here', // this should be a random string
   resave: false,
   saveUninitialized: false,
+  cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: false
+    },
 }));
-
+app.use(bodyParser.json())
 
 let http = require("http").Server(app);
 // set up socket.io and bind it to our
@@ -56,21 +66,6 @@ app.get("/", async (req: Request, res: Response) => {
   const user2: User = { username: 'timy2', email: 'timothy.djoon@gmail.com', password: 'password', is_admin: 1};
 
 
-  const promiseValidation = new Promise((resolve, reject) => {
-    resolve(validateCredentials(user));
-  });
-
-  promiseValidation.then((result) => {
-    if(!result) {
-      res.status(401).send('Invalid credentials');
-      console.log("Failed")
-  } else {
-    // set user data in the session
-    req.session.user = user;
-    res.send('Logged in successfully!');  
-  }
-  });
-  
 
   const promGetUsers = new Promise((resolve, reject) => {
     resolve(getUsers());
@@ -96,9 +91,54 @@ app.get("/", async (req: Request, res: Response) => {
 app.get("/getMessages", (req: Request, res: Response)=>{
   res.send({items: messages});
 })
+
+
 app.post('/login', (req: Request, res: Response) => {
+  const { password, email } = req.body;
+  const user = { password, email };
+
+
+  const promiseValidation = new Promise((resolve, reject) => {
+    resolve(validateCredentials(user));
+  });
+
+  promiseValidation.then((result) => {
+    if(!result) {
+      res.status(401).send('Invalid credentials');
+      console.log("Failed")
+  } else {
+    // set user data in the session
+    req.session.user = user;
+    res.json({ message: 'Logged in successfully!', user }); 
+  }
+  });
 
 });
+
+
+app.post('/getSession', (req, res) => {
+  const user = req.session.user;
+  if (user) {
+    res.json({ message: 'Logged in!', user });
+  } else {
+    res.status(401).json({ message: 'Not logged In' });
+  }  
+});
+
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Error destroying session' });
+    } else {
+      res.clearCookie('session'); // clear the cookie from the client
+      res.status(200).json({ message: 'Session destroyed' });
+    }
+  });
+});
+
+
+
 
 
 // whenever a user connects on port 3000 via

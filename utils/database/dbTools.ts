@@ -1,14 +1,12 @@
 import { User, Chat, Message, ChatUser } from "../../index.interface";
 import mysql from "mysql2";
 
-export const connection = mysql
-  .createPool({
+export const connection = mysql.createPool({
     host: "100.103.227.61",
     user: "diplom",
     password: "password",
     database: "test",
-  })
-  .promise();
+  }).promise();
 
 export const validateCredentials = async (user: User): Promise<boolean> => {
   const [result] = await connection.query(
@@ -17,52 +15,6 @@ export const validateCredentials = async (user: User): Promise<boolean> => {
   );
   return result[0] ? true : false;
 };
-
-/* export async function checkCredentials2(user: User) {
-  // helper function for validateCredentials()
-  const [result] = await connection.query(
-    "SELECT password from users WHERE email = ? AND password = ?",
-    [user.email, user.password]
-  );
-  return result[0];
-}
-
-export const validateCredentials2 = async (user: User): Promise<boolean> => {
-  let res = false;
-
-  const promValidation = new Promise((resolve, reject) => {
-    resolve(checkCredentials2(user));
-  });
-  promValidation.then((result: any) => {
-    if (result) {
-      console.log("successful");
-      res = true;
-    } else {
-      console.log("epic fail");
-    }
-  });
-  console.log("res: " + res);
-  return res;
-}; */
-
-/*
-
-export async function getNote(id) {
-  const [rows] = await connection.query(`
-  SELECT * 
-  FROM notes
-  WHERE id = ?
-  `, [id])
-  return rows[0]
-}
-export async function createNote(title, contents) {
-  const [result] = await connection.query(`
-  INSERT INTO notes (title, contents)
-  VALUES (?, ?)
-  `, [title, contents])
-  const id = result.insertId
-  return getNote(id)
-} */
 
 // USER OPERATIONS
 export async function createUserHelper(email: string) {
@@ -111,7 +63,7 @@ export async function getUserById(id: number): Promise<User | null> {
   }
   return rows[0] as User;
 }
-
+// ALL WORK TILL HERE
 
 export async function createChat(newChat: Chat): Promise<Chat> {
   const [result] = await connection.execute(
@@ -236,3 +188,50 @@ export const getAllMessagesForChat = async (chat: Chat) => {
 };
 
 export default connection;
+
+
+/* export async function checkCredentials2(user: User) {
+  // helper function for validateCredentials()
+  const [result] = await connection.query(
+    "SELECT password from users WHERE email = ? AND password = ?",
+    [user.email, user.password]
+  );
+  return result[0];
+}
+
+export const validateCredentials2 = async (user: User): Promise<boolean> => {
+  let res = false;
+
+  const promValidation = new Promise((resolve, reject) => {
+    resolve(checkCredentials2(user));
+  });
+  promValidation.then((result: any) => {
+    if (result) {
+      console.log("successful");
+      res = true;
+    } else {
+      console.log("epic fail");
+    }
+  });
+  console.log("res: " + res);
+  return res;
+}; */
+
+/*
+
+export async function getNote(id) {
+  const [rows] = await connection.query(`
+  SELECT * 
+  FROM notes
+  WHERE id = ?
+  `, [id])
+  return rows[0]
+}
+export async function createNote(title, contents) {
+  const [result] = await connection.query(`
+  INSERT INTO notes (title, contents)
+  VALUES (?, ?)
+  `, [title, contents])
+  const id = result.insertId
+  return getNote(id)
+} */

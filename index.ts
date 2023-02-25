@@ -3,8 +3,8 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session, { Session, SessionData } from 'express-session';
-import connection from './utils/database/database_con'
-import { validateCredentials } from "./utils/dbTools";
+import * as mysql from 'mysql2/promise';
+import { connection, createUser, validateCredentials, getUserById, getUsers } from './utils/database/dbTools'
 import { User } from './index.interface'
 
 interface UserSession extends Session {
@@ -17,21 +17,12 @@ declare module "express-session" {
   }
 }
 
-connection.connect()
-
-connection.query('SELECT 1 + 1 AS solution', function (err, rows, fields) {
-  if (err) throw err
-  console.log('The solution is: ', rows[0].solution)
-})
+//connection.connect()
 
 // create tables with foreign keys
 connection.execute('CREATE TABLE IF NOT EXISTS users ( id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, username VARCHAR(256), password VARCHAR(32) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
-
 connection.execute('CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,name VARCHAR(256),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
-
 connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
-
-
 connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 
 interface Imessage{
@@ -60,31 +51,53 @@ let http = require("http").Server(app);
 // http server.
 let io = require("socket.io")(http);
 
-app.get("/", (req: Request, res: Response) => {
-  const user: User = { id: 1, name: 'timy', email: 'timothy.djon@gmail.com', password: 'passwod'};
-  if (validateCredentials(user)) {
+app.get("/", async (req: Request, res: Response) => {
+  const user: User = { username: 'timy', email: 'timothy.djon@gmail.com', password: 'password', is_admin: 1};
+  const user2: User = { username: 'timy2', email: 'timothy.djoon@gmail.com', password: 'password', is_admin: 1};
+
+
+  const promiseValidation = new Promise((resolve, reject) => {
+    resolve(validateCredentials(user));
+  });
+
+  promiseValidation.then((result) => {
+    if(!result) {
+      res.status(401).send('Invalid credentials');
+      console.log("Failed")
+  } else {
     // set user data in the session
     req.session.user = user;
-    res.send('Logged in successfully!');
-  } else {
-    res.status(401).send('Invalid credentials');
-    console.log("Failed")
+    res.send('Logged in successfully!');  
   }
+  });
+  
+
+  const promGetUsers = new Promise((resolve, reject) => {
+    resolve(getUsers());
+  });
+  promGetUsers.then((result: User[]) => {
+    let i: any;
+    for(i in result) {
+      //console.log(`${result[i].username}`);
+    }
+  })
+
+  const promGetUserById = new Promise((resolve, reject) => {
+    resolve(getUserById(1));
+  });
+  promGetUserById.then((result: User) => {
+    const user: User = result;
+    console.log(user)
+  })
+
 });
+
+
 app.get("/getMessages", (req: Request, res: Response)=>{
   res.send({items: messages});
 })
 app.post('/login', (req: Request, res: Response) => {
-  // check if the user is authenticated
-  const user: User = { id: 1, name: 'timy', email: 'timothy.djon@gmail.com', password: 'password'};
-  if (validateCredentials(user)) {
-    // set user data in the session
-    req.session.user = user;
-    res.send('Logged in successfully!');
-  } else {
-    res.status(401).send('Invalid credentials');
-    console.log("Failed")
-  }
+
 });
 
 

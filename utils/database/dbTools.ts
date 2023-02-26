@@ -65,7 +65,7 @@ export async function getUserById(id: number): Promise<User | null> {
 }
 
 export async function getUserByMail(email: string): Promise<User | null> {
-  const [rows] = await connection.execute("SELECT * FROM users WHERE email = ?", [
+  const [rows] = await connection.execute("SELECT username, email, is_admin, created_on FROM users WHERE email = ?", [
     email,
   ]);
   if (!rows) {

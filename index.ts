@@ -119,7 +119,7 @@ app.post('/login', (req: Request, res: Response) => {
 });
 
 
-app.post('/getSession', (req, res) => {
+app.post('/getSession', (req: Request, res: Response) => {
   const user = req.session.user;
   if (user) {
     res.json({ message: 'Logged in!', user });
@@ -128,17 +128,33 @@ app.post('/getSession', (req, res) => {
   }  
 });
 
-app.post('/logout', (req, res) => {
+// app.post('/logout', (req: Request, res: Response) => {
+//   req.session.destroy((err) => {
+//     if (err) {
+//       console.error(err);
+//       res.status(500).json({ message: 'Error destroying session' });
+//     } else {
+//       req.session.user = null;
+//       res.clearCookie('session'); // clear the cookie from the client
+//       req.session.user = null;
+//       console.log("logout: ", req.session)
+//       res.status(200).json({ message: 'Session destroyed' });
+//     }
+//   });
+// });
+app.post('/logout', (req: Request, res: Response) => {
+  req.session.user = null; // set the user property to null
   req.session.destroy((err) => {
     if (err) {
       console.error(err);
       res.status(500).json({ message: 'Error destroying session' });
     } else {
       res.clearCookie('session'); // clear the cookie from the client
-      res.status(200).json({ message: 'Session destroyed' });
+      res.status(200).json({ message: 'Session destroyed', user: null });
     }
   });
 });
+
 
 
 // whenever a user connects on port 3000 via

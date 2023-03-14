@@ -113,7 +113,6 @@ app.post('/login', (req: Request, res: Response) => {
       req.session.user = user;
       res.json({ message: 'Logged in successfully!', user }); 
     })
-    
   }
   });
 });

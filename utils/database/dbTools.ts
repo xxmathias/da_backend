@@ -8,6 +8,13 @@ export const connection = mysql.createPool({
     database: "test",
   }).promise();
 
+  export const con = mysql.createConnection({
+    host: "100.103.227.61",
+    user: "diplom",
+    password: "password",
+    database: "test",
+  })
+
 export const validateCredentials = async (user: User): Promise<boolean> => {
   const [result] = await connection.query(
     "SELECT password from users WHERE email = ? AND password = ?",
@@ -73,8 +80,59 @@ export async function getUserByMail(email: string): Promise<User | null> {
   }
   return rows[0] as User;
 }
-// ALL WORK TILL HERE
 
+
+export async function sendMessage(newMessage: Message) {
+  // sends Message and sets has_read for each user in the chat
+  let insertedMsgId: number;
+  let [res] = await connection.execute(
+    `INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)`,
+    [newMessage.user_id, newMessage.chat_id, newMessage.msg_type, newMessage.msg]
+  );
+  insertedMsgId = res.insertId;
+  (async () => {
+    const chatUser = await connection.execute(
+      'SELECT cu.user_id FROM chat_users cu WHERE cu.user_id != ? AND cu.chat_id = ?',
+      [newMessage.user_id, newMessage.chat_id]
+    );
+
+    chatUser[0].forEach(chatUser => {
+      connection.execute(
+        'INSERT INTO user_message_status (user_id, chat_id, message_id, has_read) VALUES (?, ?, ?, ?)',
+        [chatUser.user_id, newMessage.chat_id, insertedMsgId, 0]
+      );
+    }); 
+  })();
+}
+
+
+// ALL WORK ~ TILL HERE
+
+
+
+export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
+  const [rows] = await connection.execute(
+    "SELECT * FROM messages WHERE chat_id = ?",
+    [chatId]
+  );
+  return rows as Message[];
+}
+
+/* export async function getMessagesByChatId(chatId: number): Promise<string[]> {
+  let res: string[];
+  async function getMessagesByChatIdHelper(chatId: number): Promise<string[]> {
+    const [rows] = await connection.execute(
+      "SELECT * FROM messages WHERE chat_id = ?",
+      [chatId]
+    );
+    res = rows;
+    return rows as string[];
+  }
+  const promGetMsgs = new Promise((resolve, reject) => {
+    resolve(getMessagesByChatIdHelper(chatId));
+  });
+  return res;
+} */
 
 export async function createChat(newChat: Chat): Promise<Chat> {
   const [result] = await connection.execute(
@@ -99,18 +157,6 @@ export async function getChats(): Promise<Chat[]> {
   return rows as Chat[];
 }
 
-export async function createMessage(newMessage: Message): Promise<Message> {
-  const [result] = await connection.execute(
-    "INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)",
-    [
-      newMessage.user_id,
-      newMessage.chat_id,
-      newMessage.msg_type,
-      newMessage.msg,
-    ]
-  );
-  return { ...newMessage, id: result.insertId };
-}
 
 export async function getMessageById(id: number): Promise<Message | null> {
   const [rows] = await connection.execute(
@@ -123,13 +169,7 @@ export async function getMessageById(id: number): Promise<Message | null> {
   return rows[0] as Message;
 }
 
-export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
-  const [rows] = await connection.execute(
-    "SELECT * FROM messages WHERE chat_id = ?",
-    [chatId]
-  );
-  return rows as Message[];
-}
+
 
 export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
   const [result] = await connection.execute(

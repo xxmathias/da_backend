@@ -3,8 +3,8 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session, { Session, SessionData } from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail } from './utils/database/dbTools'
-import { User } from './index.interface'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, sendMessage, getMessagesByChatId } from './utils/database/dbTools'
+import { Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
 interface UserSession extends Session {
@@ -22,6 +22,9 @@ connection.execute('CREATE TABLE IF NOT EXISTS users ( id INTEGER PRIMARY KEY NO
 connection.execute('CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,name VARCHAR(256),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
 connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
+connection.execute('CREATE TABLE IF NOT EXISTS user_message_status (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,message_id INTEGER NOT NULL,has_read BOOL,CONSTRAINT fk_ums_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_ums_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id),CONSTRAINT fk_ums_message_id FOREIGN KEY (message_id) REFERENCES messages(id));');
+
+
 
 interface Imessage{
   sender: string;
@@ -33,6 +36,16 @@ let messages :Imessage[] = [
   {sender: "mathias", content: "hello world2"},
   {sender: "mathias", content: "hello world3"},
 ];
+
+let msg : Message = {
+  id: 1,
+  user_id: 1,
+  chat_id: 1,
+  msg_type: 1,
+  msg: "hello world"
+}
+
+
 
 const app = express();
 app.set("port", process.env.PORT || 8080);
@@ -71,14 +84,7 @@ app.get("/", async (req: Request, res: Response) => {
       //console.log(`${result[i].username}`);
     }
   })
-/* 
-  const promGetUserById = new Promise((resolve, reject) => {
-    resolve(getUserById(1));
-  });
-  promGetUserById.then((result: User) => {
-    const user: User = result;
-    console.log(user)
-  }) */
+
 
   res.send("hi")
 });
@@ -109,12 +115,28 @@ app.post('/login', (req: Request, res: Response) => {
     });
     promGetUserByMail.then((result: User) => {
       const user: User = result;
-      console.log("u: " ,user)
       req.session.user = user;
       res.json({ message: 'Logged in successfully!', user }); 
     })
   }
   });
+  sendMessage(msg)
+
+   
+  const promGetMessagesByChatId = new Promise((resolve, reject) => {
+    resolve(getMessagesByChatId(msg.chat_id));
+  });
+  promGetMessagesByChatId.then((result: Message[]) => {
+    const msg: Message[] = result;
+    console.log("msg: ", msg)
+    msg.forEach(msg => {
+      console.log(msg.msg)
+    })
+  }) 
+
+
+
+  
 });
 
 
@@ -176,8 +198,8 @@ io.on("User", (socket: socketio.Socket) =>{
 
 const server = http.listen(8080, function() {
   console.log("listening on *:8080");
+ 
 });
-
 
 
 

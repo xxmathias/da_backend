@@ -18,7 +18,7 @@ export interface Message {
   chat_id?: number;
   msg_type: number;
   msg: string;
-  created_on: string;
+  created_on?: string;
 }
 
 export interface ChatUser {
@@ -28,4 +28,12 @@ export interface ChatUser {
   username: string;
   password: string;
   email: string;
+}
+
+export interface UserMessageStatus {
+  id: number;
+  user_id?: number;
+  chat_id?: number;
+  message_id: number;
+  has_read: boolean;
 }

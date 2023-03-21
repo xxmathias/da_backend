@@ -110,7 +110,7 @@ export async function sendMessage(newMessage: Message) {
 
 
 
-export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
+export async function getMessagesByChatId1(chatId: number): Promise<Message[]> {
   const [rows] = await connection.execute(
     "SELECT * FROM messages WHERE chat_id = ?",
     [chatId]
@@ -118,21 +118,25 @@ export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
   return rows as Message[];
 }
 
-/* export async function getMessagesByChatId(chatId: number): Promise<string[]> {
-  let res: string[];
-  async function getMessagesByChatIdHelper(chatId: number): Promise<string[]> {
+export async function getMessagesByChatId(chatId: number): Promise<Message[] | void> {
+  // TODO
+  let res: Message[];
+  async function getMessagesByChatIdHelper(chatId: number): Promise<Message[]> {
     const [rows] = await connection.execute(
-      "SELECT * FROM messages WHERE chat_id = ?",
-      [chatId]
-    );
-    res = rows;
-    return rows as string[];
-  }
-  const promGetMsgs = new Promise((resolve, reject) => {
-    resolve(getMessagesByChatIdHelper(chatId));
-  });
-  return res;
-} */
+      "SELECT user_id, msg_type, msg, created_on FROM messages WHERE chat_id = ?",[chatId]);
+      return rows as Message[];
+    }
+    const promGetMsgs = new Promise((resolve, reject) => {
+      resolve(getMessagesByChatIdHelper(chatId));
+    });
+
+    promGetMsgs.then((result:any) => {
+      res = result;
+      //PROBLEM
+      // res has values here, but it does return undefined
+      return res as Message[];
+    })
+}
 
 export async function createChat(newChat: Chat): Promise<Chat> {
   const [result] = await connection.execute(

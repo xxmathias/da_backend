@@ -20,7 +20,7 @@ declare module "express-session" {
 // create tables with foreign keys
 connection.execute('CREATE TABLE IF NOT EXISTS users ( id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, username VARCHAR(256), password VARCHAR(32) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
 connection.execute('CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,name VARCHAR(256),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);');
-connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
+connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 connection.execute('CREATE TABLE IF NOT EXISTS user_message_status (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,message_id INTEGER NOT NULL,has_read BOOL,CONSTRAINT fk_ums_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_ums_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id),CONSTRAINT fk_ums_message_id FOREIGN KEY (message_id) REFERENCES messages(id));');
 
@@ -120,23 +120,13 @@ app.post('/login', (req: Request, res: Response) => {
     })
   }
   });
-  sendMessage(msg)
-
-   
-  const promGetMessagesByChatId = new Promise((resolve, reject) => {
-    resolve(getMessagesByChatId(msg.chat_id));
-  });
-  promGetMessagesByChatId.then((result: Message[]) => {
-    const msg: Message[] = result;
-    console.log("msg: ", msg)
-    msg.forEach(msg => {
-      console.log(msg.msg)
-    })
-  }) 
-
-
 
   
+  const user1: User = { username: 'test', email: 'test@gmail.com', password: 'password', is_admin: 1};
+  createUser(user1);
+
+   
+ 
 });
 
 
@@ -188,6 +178,19 @@ io.on("connection", function(socket: any) {
     socket.broadcast.emit("reload","reloadAll");
     socket.emit("reload","reloadAll");
   })
+
+  getMessagesByChatId(1).then((res) => console.log(res));
+
+
+ //sendMessage(msg)
+/*   const promGetMessagesByChatId = new Promise((resolve, reject) => {
+    resolve(getMessagesByChatId(msg.chat_id));
+  });
+  promGetMessagesByChatId.then((result: Message[]) => {
+    const msg: Message[] = result;
+    console.log("msg: ", msg)
+
+  })   */
 
 });
 

@@ -17,21 +17,21 @@ export const validateCredentials = async (user: User): Promise<boolean> => {
 };
 
 // USER OPERATIONS
-export async function createUserHelper(email: string) {
-  // checks if provided email already exists
-  const [rows] = await connection.query(
-    `
-  SELECT email
-  FROM users
-  WHERE email = ?
-  `,
-    [email]
-  );
-  return rows[0];
-}
+
 
 export async function createUser(newUser: User): Promise<void> {
   // checks if provided email already exists, if not -> new user gets created
+  async function createUserHelper(email: string) {
+    // checks if provided email already exists
+    const [rows] = await connection.query(
+    `SELECT email
+    FROM users
+    WHERE email = ?
+    `,
+      [email]
+    );
+    return rows[0];
+  }
   const promGetEmail = new Promise((resolve, reject) => {
     resolve(createUserHelper(newUser.email));
   });
@@ -92,6 +92,16 @@ export async function getChatById(id: number): Promise<Chat | null> {
     return null;
   }
   return rows[0] as Chat;
+}
+
+export async function getChatsByUserId(user_id: number) : Promise <Chat[] | null> {
+  const [rows] = await connection.execute("SELECT name, created_on FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [
+    user_id,
+  ]);
+  if (rows.length === 0) {
+    return null;
+  }
+  return rows as Chat[];
 }
 
 export async function getChats(): Promise<Chat[]> {
@@ -199,50 +209,3 @@ export const getAllMessagesForChat = async (chat: Chat) => {
 };
 
 export default connection;
-
-
-/* export async function checkCredentials2(user: User) {
-  // helper function for validateCredentials()
-  const [result] = await connection.query(
-    "SELECT password from users WHERE email = ? AND password = ?",
-    [user.email, user.password]
-  );
-  return result[0];
-}
-
-export const validateCredentials2 = async (user: User): Promise<boolean> => {
-  let res = false;
-
-  const promValidation = new Promise((resolve, reject) => {
-    resolve(checkCredentials2(user));
-  });
-  promValidation.then((result: any) => {
-    if (result) {
-      console.log("successful");
-      res = true;
-    } else {
-      console.log("epic fail");
-    }
-  });
-  console.log("res: " + res);
-  return res;
-}; */
-
-/*
-
-export async function getNote(id) {
-  const [rows] = await connection.query(`
-  SELECT * 
-  FROM notes
-  WHERE id = ?
-  `, [id])
-  return rows[0]
-}
-export async function createNote(title, contents) {
-  const [result] = await connection.query(`
-  INSERT INTO notes (title, contents)
-  VALUES (?, ?)
-  `, [title, contents])
-  const id = result.insertId
-  return getNote(id)
-} */

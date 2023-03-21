@@ -3,8 +3,8 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session, { Session, SessionData } from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail } from './utils/database/dbTools'
-import { User } from './index.interface'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId } from './utils/database/dbTools'
+import { Chat, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
 interface UserSession extends Session {
@@ -167,6 +167,23 @@ io.on("connection", function(socket: any) {
     socket.emit("reload","reloadAll");
   })
 
+  const promGetMessagesByChatId = new Promise((resolve, reject) => {
+  resolve(getMessagesByChatId(1));
+  });
+  promGetMessagesByChatId.then((result: Message[]) => {
+    const msg: Message[] = result;
+    //console.log("msg: ", msg)
+  })  
+
+  const promGetChatsByUserId = new Promise((resolve, reject) => {
+    resolve(getChatsByUserId(2));
+    });
+    promGetChatsByUserId.then((result: Chat[]) => {
+      const msg: Chat[] = result;
+      console.log("msg: ", msg)
+    }) 
+/*     const user1: User = {email: "test@gmail.com", password: "password"}
+    createUser(user1) */
 });
 
 io.on("User", (socket: socketio.Socket) =>{

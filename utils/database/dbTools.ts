@@ -16,9 +16,6 @@ export const validateCredentials = async (user: User): Promise<boolean> => {
   return result[0] ? true : false;
 };
 
-// USER OPERATIONS
-
-
 export async function createUser(newUser: User): Promise<void> {
   // checks if provided email already exists, if not -> new user gets created
   async function createUserHelper(email: string) {
@@ -65,7 +62,7 @@ export async function getUserById(id: number): Promise<User | null> {
 }
 
 export async function getUserByMail(email: string): Promise<User | null> {
-  const [rows] = await connection.execute("SELECT username, email, is_admin, created_on FROM users WHERE email = ?", [
+  const [rows] = await connection.execute("SELECT * FROM users WHERE email = ?", [
     email,
   ]);
   if (!rows) {
@@ -73,43 +70,103 @@ export async function getUserByMail(email: string): Promise<User | null> {
   }
   return rows[0] as User;
 }
+
+export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
+  const [rows] = await connection.execute(
+    "SELECT * FROM messages WHERE chat_id = ?",
+    [chatId]
+  );
+  const messages = await Promise.all(rows.map(async (row) => {
+    const user = await getUserById(row.user_id);
+    return {...row, username: user.username};
+  }));
+  return messages;
+}
+
 // ALL WORK TILL HERE
 
 
-export async function createChat(newChat: Chat): Promise<Chat> {
+export async function createChat(chatName: String): Promise<Chat> {
   const [result] = await connection.execute(
     "INSERT INTO chats (name) VALUES (?)",
-    [newChat.name]
+    [chatName]
   );
-  return { ...newChat };
+  return result as Chat;
 }
 
-export async function getChatById(id: number): Promise<Chat | null> {
+export async function deleteChat(chatId: Number): Promise<String> {
+  const [res] = await connection.query(
+    "SELECT id FROM chats WHERE id = ?",[chatId]
+  )
+  if (res.id != undefined) {
+    try {
+      await connection.execute("DELETE FROM chat_users WHERE chat_id = ?", [chatId,]);
+      await connection.execute("DELETE FROM messages WHERE chat_id = ?", [chatId,]);
+      await connection.execute("DELETE FROM chats WHERE id = ?", [chatId]);
+    } finally {
+      connection.end();
+    }
+    return "Successfully deleted Chat"
+  } else {
+    return `There is no Chat with id ${chatId}`
+  }
+};
+
+export async function addUserToChat(userId: Number, chatId: Number) {
+  // checks if user already exists in chat and if he isn't, it adds user to chat
+  const [res] = await connection.query(
+    "SELECT id FROM chat_users WHERE user_id = ?",[userId]
+  )
+  if(res.id != undefined) {
+    const [result] = await connection.execute(
+      "INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)"
+      ,[userId, chatId])
+    return "Successfully added User to Chat.";
+  } else {
+    return "User already in Chat";
+  }
+}
+
+export async function removeUserFromChat(userId: Number, chatId: Number) {
+  // checks if user is in chat and if so, removes him
+  // his messages stay in the chat
+  const [res] = await connection.query(
+    "SELECT id FROM chat_users WHERE user_id = ?",[userId]
+  )
+  if(res.id != undefined) {
+    const [result] = connection.execute("DELETE FROM chat_users WHERE user_id = ? AND chat_id = ?"
+    , [userId, chatId])
+    return "Successfully deleted User from Chat"
+  } else {
+    return "User is not in Chat";
+  }
+}
+
+export async function getChatById(id: number): Promise<Chat | String> {
   const [rows] = await connection.execute("SELECT * FROM chats WHERE id = ?", [
     id,
   ]);
   if (rows.length === 0) {
-    return null;
+    return "No Chats for given Id found";
   }
   return rows[0] as Chat;
 }
 
-export async function getChatsByUserId(user_id: number) : Promise <Chat[] | null> {
-  const [rows] = await connection.execute("SELECT name, created_on FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [
-    user_id,
-  ]);
+export async function getChatsByUserId(user_id: number) : Promise <Chat[] | String> {
+  const [rows] = await connection.execute
+  ("SELECT name, created_on FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
   if (rows.length === 0) {
-    return null;
+    return "No Chats for given User found";
   }
   return rows as Chat[];
 }
 
-export async function getChats(): Promise<Chat[]> {
+export async function getAllChats(): Promise<Chat[]> {
   const [rows] = await connection.execute("SELECT * FROM chats");
   return rows as Chat[];
 }
 
-export async function createMessage(newMessage: Message): Promise<Message> {
+export async function sendMessage(newMessage: Message): Promise<Message> {
   const [result] = await connection.execute(
     "INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)",
     [
@@ -122,90 +179,54 @@ export async function createMessage(newMessage: Message): Promise<Message> {
   return { ...newMessage, id: result.insertId };
 }
 
-export async function getMessageById(id: number): Promise<Message | null> {
+
+export async function getMessageById(id: number): Promise<Message | String> {
   const [rows] = await connection.execute(
     "SELECT * FROM messages WHERE id = ?",
     [id]
   );
   if (rows.length === 0) {
-    return null;
+    return "No Message found for given Id";
   }
   return rows[0] as Message;
 }
 
-export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
-  const [rows] = await connection.execute(
-    "SELECT * FROM messages WHERE chat_id = ?",
-    [chatId]
-  );
-  return rows as Message[];
-}
+
 
 export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
-  const [result] = await connection.execute(
+  const [rows] = await connection.execute(
     "INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)",
     [newChatUser.user_id, newChatUser.chat_id]
   );
-  return result as ChatUser;
+  return rows as ChatUser;
 }
 
-export const deleteChat = async (chatId: number): Promise<void> => {
-  try {
-    await connection.execute("DELETE FROM chat_users WHERE chat_id = ?", [
-      chatId,
-    ]);
-    await connection.execute("DELETE FROM messages WHERE chat_id = ?", [
-      chatId,
-    ]);
-    await connection.execute("DELETE FROM chats WHERE id = ?", [chatId]);
-  } finally {
-    connection.end();
-  }
-};
-
-// MESSAGE OPERATIONS
-async function insertMessage(message: Message): Promise<void> {
-  try {
-    const [result] = await connection.execute(
-      "INSERT INTO messages (msg_type, msg) VALUES (?, ?)",
-      [message.msg_type, message.msg]
-    );
-    console.log(`Inserted message with ID ${result.insertId}`);
-  } finally {
-    connection.end();
-  }
-}
-
-export const getAllMessagesForUser = async (user: User) => {
+export async function getAllMessagesForUser(user: User): Promise<Message[]> {
   let result: Message;
-  await connection.query(
+  const [rows] = await connection.query(
     "SELECT msg, msg_type, created_on FROM messages WHERE user_id = ?",
     [user.id],
-    (err, res) => {
-      if (err) throw err;
-      console.log(res);
-    }
-  );
+    );
+    return rows as Message[];
 };
 
-export const getChatUsersForChat = async (chat: Chat) => {
+export async function getChatUsersForChat(chatId: Number): Promise<Number[]> {
   let result: ChatUser;
-  await connection.query(
-    "SELECT id FROM chat_users WHERE chat_id = ?",
-    [chat.id],
-    (err, res) => {
-      if (err) throw err;
-      console.log(res);
-    }
+  const [rows] = await connection.query(
+    "SELECT user_id FROM chat_users WHERE chat_id = ?",
+    [chatId]
   );
+  return rows as Number[];
 };
 
-export const getAllMessagesForChat = async (chat: Chat) => {
-  let result: Message;
-  await connection.query(
+
+export async function getAllMessagesForChat(chat: Chat): Promise<Chat> {
+  const [rows] = await connection.query(
     "SELECT m.msg, m.msg_type, m.created_on FROM messages m, chats c, chat_users cu WHERE c.id = ? AND cu.chat_id = c.id",
     [chat.id]
   );
+  return rows as Chat;
 };
+
 
 export default connection;

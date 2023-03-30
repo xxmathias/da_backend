@@ -3,7 +3,7 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session, { Session, SessionData } from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat } from './utils/database/dbTools'
 import { Chat, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
@@ -83,16 +83,83 @@ app.get("/", async (req: Request, res: Response) => {
   res.send("hi")
 });
 
-
-app.get("/getMessages", (req: Request, res: Response)=>{
-  res.send({items: messages});
+app.get("/getUserById/:userId", (req: Request, res: Response) => {
+  // will have to send chatId in request
+  const { userId } = req.params;
+  const promGetUserById = new Promise((resolve, reject) => {
+    resolve(getUserById(parseInt(userId)));
+  });
+  promGetUserById.then((result: Message[]) => {
+    res.send({result});
+  })  
 })
 
+
+app.get("/getMessagesByChatId/:chatId", (req: Request, res: Response) => {
+  // will have to send chatId in request
+  const { chatId } = req.params;
+  const promGetMessagesByChatId = new Promise((resolve, reject) => {
+    resolve(getMessagesByChatId(parseInt(chatId)));
+  });
+  promGetMessagesByChatId.then((result: Message[]) => {
+    res.send({result});
+  })  
+})
+
+app.get("/getChatsByUserId/:userId", (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const promGetChatsByUserId = new Promise((resolve, reject) => {
+    resolve(getChatsByUserId(parseInt(userId)));
+    });
+    promGetChatsByUserId.then((result: Chat[]) => {
+      res.send({result});
+    })  
+})
+
+
+app.post("/createChat", (req: Request, res: Response) => {
+  // NEEDS TEST
+  const promCreateChat = new Promise((resolve, reject) => {
+    resolve(createChat(req.body.chatName));
+  });
+  promCreateChat.then((res) => {
+    console.log("createChat: ",res);
+  })
+})
+
+app.post("/deleteChat", (req: Request, res: Response) => {
+  // NEEDS TEST
+  const promCreateChat = new Promise((resolve, reject) => {
+    resolve(deleteChat(req.body.chatId));
+  });
+  promCreateChat.then((res) => {
+    console.log("deleteChat: ",res);
+  })
+})
+
+app.post("/addUserToChat", (req: Request, res: Response) => {
+  // NEEDS TEST
+  const promAddUserToChat = new Promise((resolve, reject) => {
+    resolve(addUserToChat(req.body.userId, req.body.chatId));
+  })
+  promAddUserToChat.then((res) => {
+    console.log("addUserToChat: ", res)
+  })
+})
+
+app.post("/removeUserFromChat", (req: Request, res: Response) => {
+  // NEEDS TEST
+  const promAddUserToChat = new Promise((resolve, reject) => {
+    resolve(removeUserFromChat(req.body.userId, req.body.chatId));
+  })
+  promAddUserToChat.then((res) => {
+    console.log("removeUserFromChat: ", res)
+  })
+})
 
 app.post('/login', (req: Request, res: Response) => {
   const { password, email } = req.body;
   let user = { password, email };
-
 
   const promiseValidation = new Promise((resolve, reject) => {
     resolve(validateCredentials(user));
@@ -154,37 +221,35 @@ app.post('/logout', (req: Request, res: Response) => {
   });
 });
 
+app.post("/sendMessage", async (req: Request, res: Response) => {
+  try {
+    const { user_id, chat_id, msg_type, msg }: Message = req.body;
+    const newMessage: Message = { user_id, chat_id, msg_type, msg };
+    const result = await sendMessage(newMessage);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error sending message");
+  }
+});
 
 
 // whenever a user connects on port 3000 via
 // a websocket, log that a user has connected
 io.on("connection", function(socket: any) {
   console.log("a user connected");
-  socket.on("test", (arg: Imessage)=>{
+  
+  socket.on("test", (arg: Message) => {
     console.log("succesful", arg)
-    messages.push(arg)
+    sendMessage(arg);
     socket.broadcast.emit("reload","reloadAll");
     socket.emit("reload","reloadAll");
   })
-
-  const promGetMessagesByChatId = new Promise((resolve, reject) => {
-  resolve(getMessagesByChatId(1));
-  });
-  promGetMessagesByChatId.then((result: Message[]) => {
-    const msg: Message[] = result;
-    //console.log("msg: ", msg)
-  })  
-
-  const promGetChatsByUserId = new Promise((resolve, reject) => {
-    resolve(getChatsByUserId(2));
-    });
-    promGetChatsByUserId.then((result: Chat[]) => {
-      const msg: Chat[] = result;
-      console.log("msg: ", msg)
-    }) 
+// to create default user if we dropped the tables again
 /*     const user1: User = {email: "test@gmail.com", password: "password"}
     createUser(user1) */
 });
+
 
 io.on("User", (socket: socketio.Socket) =>{
   console.log("User Online");

@@ -238,9 +238,7 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
 // a websocket, log that a user has connected
 io.on("connection", function(socket: any) {
   console.log("a user connected");
-  
   socket.on("test", (arg: Message) => {
-    console.log("succesful", arg)
     sendMessage(arg);
     socket.broadcast.emit("reload","reloadAll");
     socket.emit("reload","reloadAll");

@@ -13,12 +13,12 @@ export interface Chat {
   created_on: string;
 }
 export interface Message {
-  id: number;
-  user_id?: number;
-  chat_id?: number;
+  id?: number;
+  user_id: number;
+  chat_id: number;
   msg_type: number;
   msg: string;
-  created_on: string;
+  created_on?: string;
 }
 
 export interface ChatUser {

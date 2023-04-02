@@ -28,29 +28,22 @@ interface Imessage{
   content: string;
 }
 
-let messages :Imessage[] = [
-  {sender: "timy", content: "hello world"},
-  {sender: "mathias", content: "hello world2"},
-  {sender: "mathias", content: "hello world3"},
-];
-
 const app = express();
 app.set("port", process.env.PORT || 8080);
-// app.use(cors())
-const allowedDomains = ['http://localhost:3000','http://100.103.227.61:3000', 'http://0.0.0.0:3000']
+
+const allowedDomains = ['http://localhost:3000', 'http://100.103.227.61:3000', 'http://0.0.0.0:3000'];
+
 app.use(cors({
-  origin: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedDomains.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
-app.use(session({
-  secret: 'your_secret_key_here', // this should be a random string
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: false
-    },
-}));
+
 app.use(bodyParser.json())
 
 let http = require("http").Server(app);

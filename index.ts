@@ -31,11 +31,15 @@ interface Imessage{
 const app = express();
 app.set("port", process.env.PORT || 8080);
 
-const allowedDomains = ['http://localhost:3000', 'http://100.103.227.61:3000', 'http://0.0.0.0:3000'];
+const allowedDomains = ['http://localhost:3000', 'http://100.103.227.61:3000', 'http://100.103.227.61:3001', 'http://0.0.0.0:3000', 'http://localhost:8080'];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    callback(null, true);
+  origin: function (origin, callback) {
+    if (!origin || allowedDomains.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   credentials: true
 }));

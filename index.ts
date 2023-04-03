@@ -2,14 +2,12 @@ import express, { Request, Response} from "express";
 import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
-import session, { Session, SessionData } from 'express-session';
+import session from 'express-session';
 import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat } from './utils/database/dbTools'
 import { Chat, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
-interface UserSession extends Session {
-  user?: { id: number, name: string };
-}
+
 
 declare module "express-session" {
   interface SessionData {
@@ -44,7 +42,20 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(bodyParser.json())
+app.use(bodyParser.json());
+
+app.use(
+  session({
+    secret: 'your_secret_key', // Replace with your secret key
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      secure: false, // Set to true if you are using HTTPS
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  }),
+);
 
 let http = require("http").Server(app);
 // set up socket.io and bind it to our

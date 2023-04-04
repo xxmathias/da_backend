@@ -8,7 +8,6 @@ import { Chat, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
 
-
 declare module "express-session" {
   interface SessionData {
     user: User;
@@ -28,34 +27,22 @@ interface Imessage{
 
 const app = express();
 app.set("port", process.env.PORT || 8080);
-
-const allowedDomains = ['http://localhost:3000', 'http://100.103.227.61:3000', 'http://100.103.227.61:3001', 'http://0.0.0.0:3000', 'http://localhost:8080'];
-
+// app.use(cors())
+const allowedDomains = ['http://localhost:3000','http://100.103.227.61:3000', 'http://0.0.0.0:3000']
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedDomains.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true,
   credentials: true
 }));
-
-app.use(bodyParser.json());
-
-app.use(
-  session({
-    secret: 'your_secret_key', // Replace with your secret key
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: false, // Set to true if you are using HTTPS
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+app.use(session({
+  secret: 'your_secret_key_here', // this should be a random string
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: false
     },
-  }),
-);
+}));
+app.use(bodyParser.json())
 
 let http = require("http").Server(app);
 // set up socket.io and bind it to our
@@ -75,14 +62,6 @@ app.get("/", async (req: Request, res: Response) => {
       //console.log(`${result[i].username}`);
     }
   })
-/* 
-  const promGetUserById = new Promise((resolve, reject) => {
-    resolve(getUserById(1));
-  });
-  promGetUserById.then((result: User) => {
-    const user: User = result;
-    console.log(user)
-  }) */
 
   res.send("hi")
 });
@@ -180,7 +159,6 @@ app.post('/login', (req: Request, res: Response) => {
     });
     promGetUserByMail.then((result: User) => {
       const user: User = result;
-      console.log("u: " ,user)
       req.session.user = user;
       res.json({ message: 'Logged in successfully!', user }); 
     })
@@ -198,20 +176,7 @@ app.post('/getSession', (req: Request, res: Response) => {
   }  
 });
 
-// app.post('/logout', (req: Request, res: Response) => {
-//   req.session.destroy((err) => {
-//     if (err) {
-//       console.error(err);
-//       res.status(500).json({ message: 'Error destroying session' });
-//     } else {
-//       req.session.user = null;
-//       res.clearCookie('session'); // clear the cookie from the client
-//       req.session.user = null;
-//       console.log("logout: ", req.session)
-//       res.status(200).json({ message: 'Session destroyed' });
-//     }
-//   });
-// });
+
 app.post('/logout', (req: Request, res: Response) => {
   req.session.user = null; // set the user property to null
   req.session.destroy((err) => {
@@ -241,7 +206,6 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
 // whenever a user connects on port 3000 via
 // a websocket, log that a user has connected
 io.on("connection", function(socket: any) {
-  console.log("a user connected");
   socket.on("test", (arg: Message) => {
     sendMessage(arg);
     socket.broadcast.emit("reload","reloadAll");
@@ -261,65 +225,4 @@ io.on("User", (socket: socketio.Socket) =>{
 const server = http.listen(8080, function() {
   console.log("listening on *:8080");
 });
-
-
-
-
-
-
-
-// import express, { Express, Request, Response } from 'express';
-// import * as http from 'http';
-// import cors from 'cors'
-
-// // import next, { NextApiHandler } from 'next';
-// import * as socketio from 'socket.io';
-// const app = express()
-// const port = 8080
-// const server: http.Server = http.createServer(app);
-// app.use(cors())
-
-// app.listen(port, () => {
-//   console.log(`Example app listening on port ${port}`)
-// })
-
-
-
-// const io: socketio.Server = new socketio.Server(server ,{
-//   cors: {
-//     "origin": "*",
-//     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-//     "preflightContinue": false,
-//     "optionsSuccessStatus": 204
-//   }    
-// });    
-
-// io.on("connect_error", (err) => {
-//   console.log(`connect_error due to ${err.message}`);
-// });  
-
-// io.on('connection', (socket) => {
-//   console.log('a user connected');
-// });  
-
-
-
-// io.on('connection', (socket: socketio.Socket) => {
-//   console.log('connection');
-//   socket.emit('status', 'Hello from Socket.io');
-//   socket.on('disconnect', () => {
-//     console.log('client disconnected');
-//   })  
-// });  
-// io.on("User", (socket: socketio.Socket) =>{
-//   console.log("User Online");
-// })  
-
-
-
-// app.get('/', (req:Request, res:Response) => {
-//   res.send('Hello World!')
-// })  
-
-// io.attach(server);
 

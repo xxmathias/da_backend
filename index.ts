@@ -176,7 +176,6 @@ app.post('/login', (req: Request, res: Response) => {
     });
     promGetUserByMail.then((result: User) => {
       const user: User = result;
-      console.log("u: " ,user)
       req.session.user = user;
       res.json({ message: 'Logged in successfully!', user }); 
     })
@@ -237,7 +236,6 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
 // whenever a user connects on port 3000 via
 // a websocket, log that a user has connected
 io.on("connection", function(socket: any) {
-  console.log("a user connected");
   socket.on("test", (arg: Message) => {
     sendMessage(arg);
     socket.broadcast.emit("reload","reloadAll");

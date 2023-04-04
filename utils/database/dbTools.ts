@@ -154,7 +154,7 @@ export async function getChatById(id: number): Promise<Chat | String> {
 
 export async function getChatsByUserId(user_id: number) : Promise <Chat[] | String> {
   const [rows] = await connection.execute
-  ("SELECT name, created_on FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
+  ("SELECT name, created_on, last_message FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
   if (rows.length === 0) {
     return "No Chats for given User found";
   }
@@ -176,6 +176,7 @@ export async function sendMessage(newMessage: Message): Promise<Message> {
       newMessage.msg,
     ]
   );
+  const [res] = await connection.execute("UPDATE chats SET last_message = ? WHERE chats.id = ?", [newMessage.msg, newMessage.chat_id]);
   return { ...newMessage, id: result.insertId };
 }
 

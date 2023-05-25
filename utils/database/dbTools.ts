@@ -83,6 +83,20 @@ export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
   return messages;
 }
 
+export async function getMatchingUser(inputString: string): Promise<Message[]> {
+  if(!inputString) return [];
+const [rows] = await connection.execute(
+    "SELECT * FROM users WHERE username LIKE ?",
+    [`%${inputString}%`]
+  );
+  const users = await Promise.all(rows.map(async (row) => {
+    const user = await getUserById(row.id);
+    return {...row, username: user.username};
+  }));
+  return users;
+}
+
+
 // ALL WORK TILL HERE
 
 

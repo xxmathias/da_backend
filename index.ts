@@ -188,10 +188,17 @@ app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
 })
 
 io.on("connection", function(socket: any) {
+  // join a chat room when the client sends a 'join_room' event
+  socket.on('join_room', (roomId) => {
+    socket.join(roomId);
+  });
+
   socket.on("send_message", async (arg: Message) => {
     try {
       const newMessage = await sendMessage(arg);
-      socket.emit("new_message", newMessage);
+
+      // emit the new message to all sockets in the room
+      io.to(arg.chat_id).emit("new_message", newMessage);
     } catch (error) {
       console.error(error);
     }

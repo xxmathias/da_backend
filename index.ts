@@ -32,10 +32,10 @@ app.use(session({
         sameSite: false
     },
 }));
+
 app.use(bodyParser.json())
 
 let http = require("http").Server(app);
-
 let io = require("socket.io")(http); // set up socket.io and bind it to our http server.
 
 app.get("/", async (req: Request, res: Response) => {
@@ -149,7 +149,6 @@ app.post('/getSession', (req: Request, res: Response) => {
   }  
 });
 
-
 app.post('/logout', (req: Request, res: Response) => {
   req.session.user = null; // set the user property to null
   req.session.destroy((err) => {
@@ -175,7 +174,6 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
   }
 });
 
-
 app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
   // will have to send chatId in request
   const {inputString} = req.params;
@@ -189,14 +187,15 @@ app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
   })  
 })
 
-// whenever a user connects on port 3000 via
-// a websocket, log that a user has connected
 io.on("connection", function(socket: any) {
-  socket.on("test", (arg: Message) => {
-    sendMessage(arg);
-    socket.broadcast.emit("reload","reloadAll");
-    socket.emit("reload","reloadAll");
-  })
+  socket.on("send_message", async (arg: Message) => {
+    try {
+      const newMessage = await sendMessage(arg);
+      socket.emit("new_message", newMessage);
+    } catch (error) {
+      console.error(error);
+    }
+  });
 });
 
 io.on("User", (socket: socketio.Socket) =>{

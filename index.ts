@@ -3,7 +3,7 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser } from './utils/database/dbTools'
 import { Chat, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
@@ -175,7 +175,22 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
   }
 });
 
-//TODO: this is funky stuff
+
+app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
+  // will have to send chatId in request
+  const {inputString} = req.params;
+  // if(!inputString) return null
+  const promGetMessagesByChatId = new Promise((resolve, reject) => {
+    resolve(getMatchingUser(inputString));
+  });
+  promGetMessagesByChatId.then((result: any[]) => {
+    console.log(result)
+    res.send({result});
+  })  
+})
+
+// whenever a user connects on port 3000 via
+// a websocket, log that a user has connected
 io.on("connection", function(socket: any) {
   socket.on("test", (arg: Message) => {
     sendMessage(arg);

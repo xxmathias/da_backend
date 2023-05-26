@@ -20,19 +20,9 @@ connection.execute('CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY NOT
 connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 
-interface Imessage{
-  sender: string;
-  content: string;
-}
-
 const app = express();
 app.set("port", process.env.PORT || 8080);
-// app.use(cors())
-const allowedDomains = ['http://localhost:3000','http://100.103.227.61:3000', 'http://0.0.0.0:3000']
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(cors({ origin: true, credentials: true }));
 app.use(session({
   secret: 'your_secret_key_here', // this should be a random string
   resave: false,
@@ -45,29 +35,14 @@ app.use(session({
 app.use(bodyParser.json())
 
 let http = require("http").Server(app);
-// set up socket.io and bind it to our
-// http server.
-let io = require("socket.io")(http);
+
+let io = require("socket.io")(http); // set up socket.io and bind it to our http server.
 
 app.get("/", async (req: Request, res: Response) => {
-  const user: User = { username: 'timy', email: 'timothy.djon@gmail.com', password: 'password', is_admin: 1};
-  const user2: User = { username: 'timy2', email: 'timothy.djoon@gmail.com', password: 'password', is_admin: 1};
-
-  const promGetUsers = new Promise((resolve, reject) => {
-    resolve(getUsers());
-  });
-  promGetUsers.then((result: User[]) => {
-    let i: any;
-    for(i in result) {
-      //console.log(`${result[i].username}`);
-    }
-  })
-
   res.send("hi")
 });
 
 app.get("/getUserById/:userId", (req: Request, res: Response) => {
-  // will have to send chatId in request
   const { userId } = req.params;
   const promGetUserById = new Promise((resolve, reject) => {
     resolve(getUserById(parseInt(userId)));
@@ -79,7 +54,6 @@ app.get("/getUserById/:userId", (req: Request, res: Response) => {
 
 
 app.get("/getMessagesByChatId/:chatId", (req: Request, res: Response) => {
-  // will have to send chatId in request
   const { chatId } = req.params;
   const promGetMessagesByChatId = new Promise((resolve, reject) => {
     resolve(getMessagesByChatId(parseInt(chatId)));
@@ -143,7 +117,7 @@ app.post("/removeUserFromChat", (req: Request, res: Response) => {
 app.post('/login', (req: Request, res: Response) => {
   const { password, email } = req.body;
   let user = { password, email };
-
+  
   const promiseValidation = new Promise((resolve, reject) => {
     resolve(validateCredentials(user));
   });
@@ -165,7 +139,6 @@ app.post('/login', (req: Request, res: Response) => {
   }
   });
 });
-
 
 app.post('/getSession', (req: Request, res: Response) => {
   const user = req.session.user;
@@ -202,25 +175,18 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
   }
 });
 
-
-// whenever a user connects on port 3000 via
-// a websocket, log that a user has connected
+//TODO: this is funky stuff
 io.on("connection", function(socket: any) {
   socket.on("test", (arg: Message) => {
     sendMessage(arg);
     socket.broadcast.emit("reload","reloadAll");
     socket.emit("reload","reloadAll");
   })
-// to create default user if we dropped the tables again
-/*     const user1: User = {email: "test@gmail.com", password: "password"}
-    createUser(user1) */
 });
-
 
 io.on("User", (socket: socketio.Socket) =>{
   console.log("User Online");
 })
-
 
 const server = http.listen(8080, function() {
   console.log("listening on *:8080");

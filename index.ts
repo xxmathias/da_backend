@@ -176,6 +176,7 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
     const { user_id, chat_id, msg_type, msg }: Message = req.body;
     const newMessage: Message = { user_id, chat_id, msg_type, msg };
     const result = await sendMessage(newMessage);
+    console.log("res:", result)
     res.status(200).json(result);
   } catch (err) {
     console.error(err);
@@ -204,6 +205,7 @@ io.on("connection", function(socket: any) {
   socket.on("send_message", async (arg: Message) => {
     try {
       const newMessage = await sendMessage(arg);
+      console.log(newMessage)
 
       // emit the new message to all sockets in the room
       io.to(arg.chat_id).emit("new_message", newMessage);

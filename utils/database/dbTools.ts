@@ -181,7 +181,7 @@ export async function getChatById(id: number): Promise<Chat | String> {
 
 export async function getChatsByUserId(user_id: number) : Promise <Chat[] | String> {
   const [rows] = await connection.execute
-  ("SELECT c.id, c.name, c.created_on, c.last_message FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
+  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
   if (rows.length === 0) {
     return "No Chats for given User found";
   }
@@ -193,7 +193,7 @@ export async function getAllChats(): Promise<Chat[]> {
   return rows as Chat[];
 }
 
-export async function sendMessage(newMessage: Message): Promise<Message> {
+export async function sendMessage(newMessage: Message): Promise<Message | String> {
   const [result] = await connection.execute(
     "INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)",
     [
@@ -203,19 +203,28 @@ export async function sendMessage(newMessage: Message): Promise<Message> {
       newMessage.msg,
     ]
   );
-  const [res] = await connection.execute("UPDATE chats SET last_message = ? WHERE chats.id = ?", [newMessage.msg, newMessage.chat_id]);
-  return { ...newMessage, id: result.insertId };
+
+  const currentTime = new Date();
+
+  const [res] = await connection.execute("UPDATE chats SET last_message = ?, last_message_sent = ? WHERE chats.id = ?", [newMessage.msg, currentTime, newMessage.chat_id]);
+  
+  const resu = await getMessageById(result.insertId);
+  
+  return resu;
 }
 
 
-export async function getMessageById(id: number): Promise<Message | String> {
+
+export async function getMessageById(id: number): Promise<Message | string> {
   const [rows] = await connection.execute(
-    "SELECT * FROM messages WHERE id = ?",
+    "SELECT m.*, u.username FROM messages m JOIN users u ON m.user_id = u.id WHERE m.id = ?",
     [id]
   );
+
   if (rows.length === 0) {
-    return "No Message found for given Id";
+    return "No message found for given ID";
   }
+  
   return rows[0] as Message;
 }
 

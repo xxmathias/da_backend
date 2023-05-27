@@ -180,7 +180,7 @@ export async function getAllChats(): Promise<Chat[]> {
   return rows as Chat[];
 }
 
-export async function sendMessage(newMessage: Message): Promise<Message> {
+export async function sendMessage(newMessage: Message): Promise<Message | String> {
   const [result] = await connection.execute(
     "INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)",
     [
@@ -191,18 +191,21 @@ export async function sendMessage(newMessage: Message): Promise<Message> {
     ]
   );
   const [res] = await connection.execute("UPDATE chats SET last_message = ? WHERE chats.id = ?", [newMessage.msg, newMessage.chat_id]);
-  return { ...newMessage, id: result.insertId };
+  const resu = await getMessageById(result.insertId);
+  return resu;
 }
 
 
-export async function getMessageById(id: number): Promise<Message | String> {
+export async function getMessageById(id: number): Promise<Message | string> {
   const [rows] = await connection.execute(
-    "SELECT * FROM messages WHERE id = ?",
+    "SELECT m.*, u.username FROM messages m JOIN users u ON m.user_id = u.id WHERE m.id = ?",
     [id]
   );
+
   if (rows.length === 0) {
-    return "No Message found for given Id";
+    return "No message found for given ID";
   }
+  
   return rows[0] as Message;
 }
 

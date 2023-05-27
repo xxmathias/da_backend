@@ -100,13 +100,26 @@ const [rows] = await connection.execute(
 // ALL WORK TILL HERE
 
 
-export async function createChat(chatName: String): Promise<Chat> {
+export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
+  const [rows] = await connection.execute(
+    "INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)",
+    [newChatUser.user.id, newChatUser.chat_id]
+  );
+  return rows as ChatUser;
+}
+
+export async function createChat(chatName: String, adminId: number): Promise<Chat> {
   const [result] = await connection.execute(
-    "INSERT INTO chats (name) VALUES (?)",
-    [chatName]
+    "INSERT INTO chats (name, chat_admin_id) VALUES (?, ?)",
+    [chatName, adminId]
   );
   return result as Chat;
 }
+
+
+
+
+
 
 export async function deleteChat(chatId: Number): Promise<String> {
   const [res] = await connection.query(
@@ -207,14 +220,6 @@ export async function getMessageById(id: number): Promise<Message | String> {
 }
 
 
-
-export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
-  const [rows] = await connection.execute(
-    "INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)",
-    [newChatUser.user_id, newChatUser.chat_id]
-  );
-  return rows as ChatUser;
-}
 
 export async function getAllMessagesForUser(user: User): Promise<Message[]> {
   let result: Message;

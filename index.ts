@@ -3,8 +3,8 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser } from './utils/database/dbTools'
-import { Chat, Message, User } from './index.interface'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser } from './utils/database/dbTools'
+import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
 
@@ -76,11 +76,20 @@ app.get("/getChatsByUserId/:userId", (req: Request, res: Response) => {
 
 app.post("/createChat", (req: Request, res: Response) => {
   // NEEDS TEST
+  // console.log("endpoint hit")
   const promCreateChat = new Promise((resolve, reject) => {
-    resolve(createChat(req.body.chatName));
+    resolve(createChat(req.body.chatName, req.body.creatorId));
+    resolve(console.log("createChat body", req.body.selectedUser))
   });
   promCreateChat.then((res) => {
+      //@ts-ignore
+    createChatUser({user: {id: req.body.creatorId}, chat_id: res.insertId as number} )
     console.log("createChat: ",res);
+    req.body.selectedUser.forEach((user: User)=>{
+      //@ts-ignore
+      createChatUser({user: user, chat_id: res.insertId as number} )
+      // console.log({user: user, chat_id: res.insertId})
+    })
   })
 })
 
@@ -182,7 +191,6 @@ app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
     resolve(getMatchingUser(inputString));
   });
   promGetMessagesByChatId.then((result: any[]) => {
-    console.log(result)
     res.send({result});
   })  
 })

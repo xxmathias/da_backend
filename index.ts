@@ -47,7 +47,7 @@ app.get("/getUserById/:userId", (req: Request, res: Response) => {
   const promGetUserById = new Promise((resolve, reject) => {
     resolve(getUserById(parseInt(userId)));
   });
-  promGetUserById.then((result: Message[]) => {
+  promGetUserById.then((result: User) => {
     res.send({result});
   })  
 })
@@ -78,7 +78,7 @@ app.post("/createChat", (req: Request, res: Response) => {
   // NEEDS TEST
   // console.log("endpoint hit")
   const promCreateChat = new Promise((resolve, reject) => {
-    resolve(createChat(req.body.chatName, req.body.creatorId));
+    resolve(createChat(req.body.chatName, req.body.creatorId, req.body.selectedUser.length > 1));
     resolve(console.log("createChat body", req.body.selectedUser))
   });
   promCreateChat.then((res) => {

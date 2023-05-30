@@ -108,10 +108,10 @@ export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
   return rows as ChatUser;
 }
 
-export async function createChat(chatName: String, adminId: number): Promise<Chat> {
+export async function createChat(chatName: String, adminId: number, isRoom: boolean): Promise<Chat> {
   const [result] = await connection.execute(
-    "INSERT INTO chats (name, chat_admin_id) VALUES (?, ?)",
-    [chatName, adminId]
+    "INSERT INTO chats (name, chat_admin_id, isRoom) VALUES (?, ?, ?)",
+    [chatName, adminId, isRoom]
   );
   return result as Chat;
 }
@@ -181,7 +181,7 @@ export async function getChatById(id: number): Promise<Chat | String> {
 
 export async function getChatsByUserId(user_id: number) : Promise <Chat[] | String> {
   const [rows] = await connection.execute
-  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
+  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent, c.chat_admin_id, c.isRoom FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
   if (rows.length === 0) {
     return "No Chats for given User found";
   }

@@ -51,6 +51,20 @@ export async function getUsers(): Promise<User[]> {
   return rows as User[];
 }
 
+export async function getUsersByChatId(chat_id: number, currentUserId: number): Promise<User[]> {
+  const [rows] = await connection.query("SELECT * FROM chat_users WHERE chat_id = ? AND user_id != ?", [chat_id, currentUserId]);
+  const users: User[] = [];
+
+  for (const row of rows) {
+    const user = await getUserById(row.user_id);
+    if (user) {
+      users.push(user);
+    }
+  }
+
+  return users;
+}
+
 export async function getUserById(id: number): Promise<User | null> {
   const [rows] = await connection.execute("SELECT * FROM users WHERE id = ?", [
     id,

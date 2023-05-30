@@ -1,0 +1,11 @@
+"filename", "language", "JSON", "JSON with Comments", "TypeScript", "Markdown", "comment", "blank", "total"
+"/home/timy/school/diplomarbeit/da_backend/README.md", "Markdown", 0, 0, 0, 1, 0, 0, 1
+"/home/timy/school/diplomarbeit/da_backend/index.interface.ts", "TypeScript", 0, 0, 25, 0, 0, 4, 29
+"/home/timy/school/diplomarbeit/da_backend/index.ts", "TypeScript", 0, 0, 182, 0, 14, 30, 226
+"/home/timy/school/diplomarbeit/da_backend/nodemon.json", "JSON", 5, 0, 0, 0, 0, 0, 5
+"/home/timy/school/diplomarbeit/da_backend/package-lock.json", "JSON", 2889, 0, 0, 0, 0, 1, 2890
+"/home/timy/school/diplomarbeit/da_backend/package.json", "JSON", 27, 0, 0, 0, 0, 1, 28
+"/home/timy/school/diplomarbeit/da_backend/tsconfig.json", "JSON with Comments", 0, 12, 0, 0, 0, 1, 13
+"/home/timy/school/diplomarbeit/da_backend/utils/database/dbTools.ts", "TypeScript", 0, 0, 212, 0, 7, 43, 262
+"/home/timy/school/diplomarbeit/da_backend/utils/requests/Insomnia_30_03backup.json", "JSON", 1, 0, 0, 0, 0, 0, 1
+"Total", "-", 2922, 12, 419, 1, 21, 80, 3455

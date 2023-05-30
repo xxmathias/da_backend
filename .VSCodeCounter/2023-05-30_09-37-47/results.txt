@@ -1,0 +1,40 @@
+Date : 2023-05-30 09:37:47
+Directory : /home/timy/school/diplomarbeit/da_backend
+Total : 9 files,  3354 codes, 21 comments, 80 blanks, all 3455 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| JSON               |          4 |      2,922 |          0 |          2 |      2,924 |
+| TypeScript         |          3 |        419 |         21 |         77 |        517 |
+| JSON with Comments |          1 |         12 |          0 |          1 |         13 |
+| Markdown           |          1 |          1 |          0 |          0 |          1 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                               | files      | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                  |          9 |      3,354 |         21 |         80 |      3,455 |
+| . (Files)                                                                          |          7 |      3,141 |         14 |         37 |      3,192 |
+| utils                                                                              |          2 |        213 |          7 |         43 |        263 |
+| utils/database                                                                     |          1 |        212 |          7 |         43 |        262 |
+| utils/requests                                                                     |          1 |          1 |          0 |          0 |          1 |
++------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                           | language           | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| /home/timy/school/diplomarbeit/da_backend/README.md                                | Markdown           |          1 |          0 |          0 |          1 |
+| /home/timy/school/diplomarbeit/da_backend/index.interface.ts                       | TypeScript         |         25 |          0 |          4 |         29 |
+| /home/timy/school/diplomarbeit/da_backend/index.ts                                 | TypeScript         |        182 |         14 |         30 |        226 |
+| /home/timy/school/diplomarbeit/da_backend/nodemon.json                             | JSON               |          5 |          0 |          0 |          5 |
+| /home/timy/school/diplomarbeit/da_backend/package-lock.json                        | JSON               |      2,889 |          0 |          1 |      2,890 |
+| /home/timy/school/diplomarbeit/da_backend/package.json                             | JSON               |         27 |          0 |          1 |         28 |
+| /home/timy/school/diplomarbeit/da_backend/tsconfig.json                            | JSON with Comments |         12 |          0 |          1 |         13 |
+| /home/timy/school/diplomarbeit/da_backend/utils/database/dbTools.ts                | TypeScript         |        212 |          7 |         43 |        262 |
+| /home/timy/school/diplomarbeit/da_backend/utils/requests/Insomnia_30_03backup.json | JSON               |          1 |          0 |          0 |          1 |
+| Total                                                                              |                    |      3,354 |         21 |         80 |      3,455 |
++------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+

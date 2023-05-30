@@ -195,7 +195,7 @@ export async function getChatById(id: number): Promise<Chat | String> {
 
 export async function getChatsByUserId(user_id: number) : Promise <Chat[] | String> {
   const [rows] = await connection.execute
-  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent, c.chat_admin_id, c.isRoom FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
+  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent, c.chat_admin_id, c.isRoom, c.chat_picture FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
   if (rows.length === 0) {
     return "No Chats for given User found";
   }

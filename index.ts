@@ -3,10 +3,9 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId } from './utils/database/dbTools'
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
-
 
 declare module "express-session" {
   interface SessionData {
@@ -94,6 +93,25 @@ app.post("/createChat", (req: Request, res: Response) => {
     })
   })
 })
+
+
+app.post("/getUserByChatId", (req, res) => {
+  // console.log("endpoint hit");
+  const getUserPromise = new Promise((resolve, reject) => {
+    resolve(getUsersByChatId(req.body.chat_id, req.body.currentUserId));
+    // resolve(console.log("createChat body", req.body.selectedUser))
+  });
+
+  getUserPromise
+    .then((users) => {
+      res.json(users); // Sending the response back to the frontend as JSON
+    })
+    .catch((error) => {
+      // Handle any error that occurred during the getUserByChatId function
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    });
+});
 
 app.post("/deleteChat", (req: Request, res: Response) => {
   // NEEDS TEST
@@ -218,6 +236,9 @@ app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
     res.send({result});
   })  
 })
+
+
+
 
 io.on("connection", function(socket: any) {
   // join a chat room when the client sends a 'join_room' event

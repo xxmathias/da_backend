@@ -3,7 +3,7 @@ import socketio from "socket.io";
 import path from "path";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword } from './utils/database/dbTools'
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 
@@ -150,6 +150,27 @@ app.post('/login', (req: Request, res: Response) => {
   }
   });
 });
+
+app.post('/changePassword', async (req, res) => {
+  const { oldPassword, newPassword, user } = req.body;
+  try {
+    const isOldPasswordValid = await validatePassword(oldPassword);
+    if (!isOldPasswordValid) {
+      res.status(401).send('Invalid old password');
+      return;
+    }
+
+    // Update the password in the database with the new password
+    await connection.execute('UPDATE users SET password = ? WHERE id = ?', [newPassword, user.id]);
+
+    res.status(200).json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
+
 
 app.post('/getSession', (req: Request, res: Response) => {
   const user = req.session.user;

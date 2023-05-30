@@ -16,6 +16,17 @@ export const validateCredentials = async (user: User): Promise<boolean> => {
   return result[0] ? true : false;
 };
 
+export const validatePassword = async (password: string): Promise<boolean> => {
+  try {
+    const [rows] = await connection.execute('SELECT password FROM users WHERE password = ?', [password]);
+    return rows.length > 0;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to validate password');
+  }
+};
+
+
 export async function createUser(newUser: User): Promise<void> {
   // checks if provided email already exists, if not -> new user gets created
   async function createUserHelper(email: string) {

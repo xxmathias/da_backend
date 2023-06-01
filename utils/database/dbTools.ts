@@ -1,5 +1,6 @@
 import { User, Chat, Message, ChatUser } from "../../index.interface";
 import mysql from "mysql2";
+import { scryptSync, randomBytes } from 'crypto';
 
 export const connection = mysql.createPool({
     host: "100.103.227.61",
@@ -16,15 +17,40 @@ export const validateCredentials = async (user: User): Promise<boolean> => {
   return result[0] ? true : false;
 };
 
-export const validatePassword = async (password: string): Promise<boolean> => {
+export const validatePassword = async (email: string, password: string): Promise<boolean> => {
   try {
-    const [rows] = await connection.execute('SELECT password FROM users WHERE password = ?', [password]);
-    return rows.length > 0;
+    const [rows]: any = await connection.execute('SELECT email, password FROM users WHERE email = ?', [email]);
+    if(rows.length > 0) {
+      const hashedPassword = rows[0].password;
+      console.log("Plain Password:", password, "Hashed Password:", hashedPassword);
+      
+      const match = await comparePasswords(password, hashedPassword);
+      console.log("Match Result:", match);
+      
+      return match;
+    }
+
+    console.error("No users found with that email.");
+    return false;
   } catch (error) {
     console.error(error);
     throw new Error('Failed to validate password');
   }
 };
+
+export const getHashedPassword = (password: string): string => {
+  const salt = randomBytes(16).toString("hex");
+  const hashedPassword = scryptSync(password, salt, 32).toString("hex");
+  return `${hashedPassword}${salt}`;
+};
+
+export const comparePasswords = (inputPassword: string, hashedPasswordWithSalt: string): boolean => {
+  const salt = hashedPasswordWithSalt.slice(-32);
+  const hashedPassword = hashedPasswordWithSalt.slice(0, -32);
+  const hashedInputPassword = scryptSync(inputPassword, salt, 32).toString("hex");
+  return hashedPassword === hashedInputPassword;
+};
+
 
 
 export async function createUser(newUser: User): Promise<void> {
@@ -86,14 +112,18 @@ export async function getUserById(id: number): Promise<User | null> {
   return rows[0] as User;
 }
 
-export async function getUserByMail(email: string): Promise<User | null> {
-  const [rows] = await connection.execute("SELECT * FROM users WHERE email = ?", [
-    email,
-  ]);
-  if (!rows) {
-    return null;
+export async function getUserByMail (email: string): Promise<User> {
+  try {
+    const [rows]: any = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
+    if(rows.length > 0) {
+      const user = rows[0];
+      return user;
+    }
+    throw new Error('No user found');
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to get user');
   }
-  return rows[0] as User;
 }
 
 export async function getMessagesByChatId(chatId: number): Promise<Message[]> {

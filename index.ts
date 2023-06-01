@@ -1,12 +1,11 @@
 import express, { Request, Response} from "express";
 import socketio from "socket.io";
-import path from "path";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId, comparePasswords, getHashedPassword } from './utils/database/dbTools'
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
-
+import { scryptSync, randomBytes } from 'crypto';
 declare module "express-session" {
   interface SessionData {
     user: User;
@@ -53,7 +52,6 @@ app.get("/getUserById/:userId", (req: Request, res: Response) => {
   })  
 })
 
-
 app.get("/getMessagesByChatId/:chatId", (req: Request, res: Response) => {
   const { chatId } = req.params;
   const promGetMessagesByChatId = new Promise((resolve, reject) => {
@@ -74,7 +72,6 @@ app.get("/getChatsByUserId/:userId", (req: Request, res: Response) => {
     })  
 })
 
-
 app.post("/createChat", (req: Request, res: Response) => {
   // NEEDS TEST
   // console.log("endpoint hit")
@@ -93,7 +90,6 @@ app.post("/createChat", (req: Request, res: Response) => {
     })
   })
 })
-
 
 app.post("/getUserByChatId", (req, res) => {
   // console.log("endpoint hit");
@@ -143,43 +139,39 @@ app.post("/removeUserFromChat", (req: Request, res: Response) => {
   })
 })
 
-app.post('/login', (req: Request, res: Response) => {
+app.post('/login', async (req: Request, res: Response) => {
   const { password, email } = req.body;
-  let user = { password, email };
-  
-  const promiseValidation = new Promise((resolve, reject) => {
-    resolve(validateCredentials(user));
-  });
+  try {
+    const user: User = await getUserByMail(email);
 
-  promiseValidation.then((result) => {
-    if(!result) {
-      res.status(401).send('Invalid credentials');
-      console.log("Failed")
-  } else {
-    // set user data in the session
-    const promGetUserByMail = new Promise((resolve, reject) => {
-      resolve(getUserByMail(user.email));
-    });
-    promGetUserByMail.then((result: User) => {
-      const user: User = result;
-      req.session.user = user;
-      res.json({ message: 'Logged in successfully!', user }); 
-    })
+    if (!user) { res.status(404).send('User not found'); return; }
+
+    const isMatch = comparePasswords(password, user.password); // compare the password with the hashed password stored in DB
+
+    if (!isMatch) { res.status(401).send('Invalid credentials'); return; }
+
+    req.session.user = user; 
+    res.json({ message: 'Logged in successfully!', user }); // valid credentials, set user in the session
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
   }
-  });
 });
 
 app.post('/changePassword', async (req, res) => {
-  const { oldPassword, newPassword, user } = req.body;
-  try {
-    const isOldPasswordValid = await validatePassword(oldPassword);
-    if (!isOldPasswordValid) {
-      res.status(401).send('Invalid old password');
-      return;
-    }
+  const { oldPassword, newPassword, email } = req.body;
 
-    // Update the password in the database with the new password
-    await connection.execute('UPDATE users SET password = ? WHERE id = ?', [newPassword, user.id]);
+  try {
+    const user: User = await getUserByMail(email);
+
+    if (!user) { res.status(404).send('User not found'); return; }
+
+    const isOldPasswordValid = comparePasswords(oldPassword, user.password);
+    if (!isOldPasswordValid) { res.status(401).send('Invalid old password'); return; }
+
+    const hashedNewPassword = getHashedPassword(newPassword);
+    await connection.execute('UPDATE users SET password = ? WHERE id = ?', [hashedNewPassword, user.id]);
 
     res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
@@ -187,8 +179,6 @@ app.post('/changePassword', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
-
-
 
 app.post('/getSession', (req: Request, res: Response) => {
   const user = req.session.user;
@@ -237,9 +227,6 @@ app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
   })  
 })
 
-
-
-
 io.on("connection", function(socket: any) {
   // join a chat room when the client sends a 'join_room' event
   socket.on('join_room', (roomId) => {
@@ -249,8 +236,6 @@ io.on("connection", function(socket: any) {
   socket.on("send_message", async (arg: Message) => {
     try {
       const newMessage = await sendMessage(arg);
-      console.log(newMessage)
-
       // emit the new message to all sockets in the room
       io.to(arg.chat_id).emit("new_message", newMessage);
     } catch (error) {
@@ -267,3 +252,30 @@ const server = http.listen(8080, function() {
   console.log("listening on *:8080");
 });
 
+
+  // TO HASH ALL PASSWORDS IN DB
+/*   const hashAllPasswords = async () => {
+    try {
+      // Get all users
+      const [users] = await connection.execute('SELECT * FROM users');
+    
+      for (let user of users) {
+        // Ignore users without a password
+        if (!user.password) {
+          console.warn(`User with id ${user.id} does not have a password set.`);
+          continue;
+        }
+        
+        // Hash each user's password
+        const hashedPassword = getHashedPassword(user.password);
+        
+        // Update the user's password in the database
+        await connection.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+      }
+  
+      console.log('Passwords updated successfully');
+    } catch (error) {
+      console.error('Failed to hash passwords', error);
+    }
+  };
+  hashAllPasswords(); */

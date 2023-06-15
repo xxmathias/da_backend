@@ -5,7 +5,8 @@ import session from 'express-session';
 import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId, comparePasswords, getHashedPassword } from './utils/database/dbTools'
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
-import { scryptSync, randomBytes } from 'crypto';
+import multer from 'multer';
+import path from "path";
 declare module "express-session" {
   interface SessionData {
     user: User;
@@ -250,6 +251,23 @@ io.on("User", (socket: socketio.Socket) =>{
 
 const server = http.listen(8080, function() {
   console.log("listening on *:8080");
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'messagePictures/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// File upload route
+app.post('/upload', upload.single('file'), (req: Request, res: Response) => {
+  console.log(req.file); // This should show the file information
+  res.send('File uploaded successfully.');
 });
 
 

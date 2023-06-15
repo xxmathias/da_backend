@@ -72,24 +72,27 @@ app.get("/getChatsByUserId/:userId", (req: Request, res: Response) => {
     })  
 })
 
-app.post("/createChat", (req: Request, res: Response) => {
-  // NEEDS TEST
-  // console.log("endpoint hit")
-  const promCreateChat = new Promise((resolve, reject) => {
-    resolve(createChat(req.body.chatName, req.body.creatorId, req.body.selectedUser.length > 1));
-    resolve(console.log("createChat body", req.body.selectedUser))
-  });
-  promCreateChat.then((res) => {
+app.post("/createChat", async (req: Request, res: Response) => {
+  try {
+    const chatData = await createChat(req.body.chatName, req.body.creatorId, req.body.selectedUser.length > 1);
+    console.log("createChat body", req.body.selectedUser);
+
+    const createChatPromises = req.body.selectedUser.map((user: User) => {
       //@ts-ignore
-    createChatUser({user: {id: req.body.creatorId}, chat_id: res.insertId as number} )
-    console.log("createChat: ",res);
-    req.body.selectedUser.forEach((user: User)=>{
+      return createChatUser({user: user, chat_id: chatData.insertId as number});
+    });
+
       //@ts-ignore
-      createChatUser({user: user, chat_id: res.insertId as number} )
-      // console.log({user: user, chat_id: res.insertId})
-    })
-  })
-})
+    createChatPromises.push(createChatUser({user: {id: req.body.creatorId}, chat_id: chatData.insertId as number}));
+
+    await Promise.all(createChatPromises);
+    res.json({ status: 'done' });  // send a response back to the frontend
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: 'An error occurred while creating chat' });
+  }
+});
+
 
 app.post("/getUserByChatId", (req, res) => {
   // console.log("endpoint hit");

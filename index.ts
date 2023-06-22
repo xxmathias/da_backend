@@ -204,16 +204,16 @@ app.post('/logout', (req: Request, res: Response) => {
 
 app.post("/sendMessage", async (req: Request, res: Response) => {
   try {
-    const { user_id, chat_id, msg_type, msg }: Message = req.body;
-    const newMessage: Message = { user_id, chat_id, msg_type, msg };
-    const result = await sendMessage(newMessage);
-    console.log("res:", result)
-    res.status(200).json(result);
+    const messages: Message[] = req.body;
+    const results = await Promise.all(messages.map(message => sendMessage(message)));
+    console.log("results:", results);
+    res.status(200).json(results);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error sending message");
+    res.status(500).send("Error sending messages");
   }
 });
+
 
 // TODO: THEY BOTH NEED TESTING
 app.post("changeProfilePicture", async (req: Request, res: Response) => {

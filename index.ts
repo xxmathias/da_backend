@@ -2,7 +2,7 @@ import express, { Request, Response} from "express";
 import socketio from "socket.io";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId, comparePasswords, getHashedPassword } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId, comparePasswords, getHashedPassword, changeProfilePicture, changeChatPicture } from './utils/database/dbTools'
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 import multer from 'multer';
@@ -13,7 +13,7 @@ declare module "express-session" {
 }
 async function createTables() {
   await connection.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER AUTO_INCREMENT PRIMARY KEY,username VARCHAR(256),password VARCHAR(255) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP, profile_picture MEDIUMTEXT);');
-  await connection.execute('CREATE TABLE IF NOT EXISTS chats (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(256),last_message MEDIUMTEXT,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,last_message_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,chat_admin_id INT,isRoom BOOLEAN,CONSTRAINT fk_chat_admin_id FOREIGN KEY (chat_admin_id) REFERENCES users(id), chat_picture VARCHAR(255));');
+  await connection.execute('CREATE TABLE IF NOT EXISTS chats (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(256),last_message MEDIUMTEXT,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,last_message_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,chat_admin_id INT,isRoom BOOLEAN,CONSTRAINT fk_chat_admin_id FOREIGN KEY (chat_admin_id) REFERENCES users(id), chat_picture MEDIUMTEXT);');
   await connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg MEDIUMTEXT,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
   await connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 }
@@ -215,6 +215,31 @@ app.post("/sendMessage", async (req: Request, res: Response) => {
   }
 });
 
+// TODO: THEY BOTH NEED TESTING
+app.post("changeProfilePicture", async (req: Request, res: Response) => {
+  try {
+    const {userId, image} = req.body;
+
+    const result = await changeProfilePicture(userId, image)
+    console.log("res:", result)
+    res.status(200).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error updating picture");
+  }
+});
+app.post("changeChatPicture", async (req: Request, res: Response) => {
+  try {
+    const {chatId, image} = req.body;
+    const result = await changeChatPicture(chatId, image);
+    console.log("res:", result)
+    res.status(200).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error updating picture");
+  }
+});
+
 app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
   // will have to send chatId in request
   const {inputString} = req.params;
@@ -243,7 +268,6 @@ io.on("connection", function(socket) {
     }
   });
 });
-
 
 io.on("User", (socket: socketio.Socket) =>{
   console.log("User Online");

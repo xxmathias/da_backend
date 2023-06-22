@@ -170,7 +170,17 @@ export async function createChat(chatName: String, adminId: number, isRoom: bool
   return result as Chat;
 }
 
+export async function changeProfilePicture(userId: number, image: string) {
+  const [result] = await connection.execute(
+    "UPDATE users SET profile_picture = ? WHERE id = ?", [image,userId]);
+  return result;
+}
 
+export async function changeChatPicture(chatId: number, image: string) {
+  const [result] = await connection.execute(
+    "UPDATE chats SET chat_picture = ? WHERE id = ?", [image, chatId]);
+  return result;
+}
 
 
 

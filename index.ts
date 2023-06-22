@@ -6,16 +6,15 @@ import { connection, createUser, validateCredentials, getUserById, getUsers, get
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
 import multer from 'multer';
-import path from "path";
 declare module "express-session" {
   interface SessionData {
     user: User;
   }
 }
 async function createTables() {
-  await connection.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER AUTO_INCREMENT PRIMARY KEY,username VARCHAR(256),password VARCHAR(255) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP, profile_picture VARCHAR(255));');
+  await connection.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER AUTO_INCREMENT PRIMARY KEY,username VARCHAR(256),password VARCHAR(255) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP, profile_picture MEDIUMTEXT);');
   await connection.execute('CREATE TABLE IF NOT EXISTS chats (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(256),last_message VARCHAR(256),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,last_message_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,chat_admin_id INT,isRoom BOOLEAN,CONSTRAINT fk_chat_admin_id FOREIGN KEY (chat_admin_id) REFERENCES users(id), chat_picture VARCHAR(255));');
-  await connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg VARCHAR(4096),created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
+  await connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg MEDIUMTEXT,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
   await connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
 }
 
@@ -228,13 +227,13 @@ app.get("/getMatchingUser/:inputString", (req: Request, res: Response) => {
   })  
 })
 
-io.on("connection", function(socket: any) {
+io.on("connection", function(socket) {
   // join a chat room when the client sends a 'join_room' event
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
   });
 
-  socket.on("send_message", async (arg: Message) => {
+  socket.on("send_message", async (arg) => {
     try {
       const newMessage = await sendMessage(arg);
       // emit the new message to all sockets in the room
@@ -245,6 +244,7 @@ io.on("connection", function(socket: any) {
   });
 });
 
+
 io.on("User", (socket: socketio.Socket) =>{
   console.log("User Online");
 })
@@ -253,22 +253,6 @@ const server = http.listen(8080, function() {
   console.log("listening on *:8080");
 });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'messagePictures/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-
-const upload = multer({ storage });
-
-// File upload route
-app.post('/upload', upload.single('file'), (req: Request, res: Response) => {
-  console.log(req.file); // This should show the file information
-  res.send('File uploaded successfully.');
-});
 
 
   // TO HASH ALL PASSWORDS IN DB

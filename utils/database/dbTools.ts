@@ -151,7 +151,6 @@ const [rows] = await connection.execute(
   return users;
 }
 
-
 // ALL WORK TILL HERE
 
 
@@ -249,24 +248,32 @@ export async function getAllChats(): Promise<Chat[]> {
 }
 
 export async function sendMessage(newMessage: Message): Promise<Message | String> {
+  let msg: any = newMessage.msg;
+  if (newMessage.msg_type === 1) {
+      // Convert Base64 string to binary
+      const base64Data = newMessage.msg.replace(/^data:image\/\w+;base64,/, "");
+      msg = Buffer.from(base64Data, 'base64');
+  }
+  
   const [result] = await connection.execute(
-    "INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)",
-    [
-      newMessage.user_id,
-      newMessage.chat_id,
-      newMessage.msg_type,
-      newMessage.msg,
-    ]
+      "INSERT INTO messages (user_id, chat_id, msg_type, msg) VALUES (?, ?, ?, ?)",
+      [
+          newMessage.user_id,
+          newMessage.chat_id,
+          newMessage.msg_type,
+          msg, // Insert the binary data
+      ]
   );
 
   const currentTime = new Date();
 
   const [res] = await connection.execute("UPDATE chats SET last_message = ?, last_message_sent = ? WHERE chats.id = ?", [newMessage.msg, currentTime, newMessage.chat_id]);
-  
+
   const resu = await getMessageById(result.insertId);
-  
+
   return resu;
 }
+
 
 
 

@@ -144,20 +144,27 @@ app.post('/login', async (req: Request, res: Response) => {
   try {
     const user: User = await getUserByMail(email);
 
-    if (!user) { res.status(404).send('User not found'); return; }
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
 
     const isMatch = comparePasswords(password, user.password); // compare the password with the hashed password stored in DB
 
-    if (!isMatch) { res.status(401).send('Invalid credentials'); return; }
+    if (!isMatch) {
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
 
     req.session.user = user; 
     res.json({ message: 'Logged in successfully!', user }); // valid credentials, set user in the session
 
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 app.post('/changePassword', async (req, res) => {
   const { oldPassword, newPassword, email } = req.body;

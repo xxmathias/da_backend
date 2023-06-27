@@ -1,5 +1,6 @@
 import { User, Chat, Message, ChatUser } from "../../index.interface";
 import mysql from "mysql2";
+import { scryptSync, randomBytes } from 'crypto';
 
 export const connection = mysql.createPool({
     host: "100.103.227.61",
@@ -15,6 +16,42 @@ export const validateCredentials = async (user: User): Promise<boolean> => {
   );
   return result[0] ? true : false;
 };
+
+export const validatePassword = async (email: string, password: string): Promise<boolean> => {
+  try {
+    const [rows]: any = await connection.execute('SELECT email, password FROM users WHERE email = ?', [email]);
+    if(rows.length > 0) {
+      const hashedPassword = rows[0].password;
+      console.log("Plain Password:", password, "Hashed Password:", hashedPassword);
+      
+      const match = await comparePasswords(password, hashedPassword);
+      console.log("Match Result:", match);
+      
+      return match;
+    }
+
+    console.error("No users found with that email.");
+    return false;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to validate password');
+  }
+};
+
+export const getHashedPassword = (password: string): string => {
+  const salt = randomBytes(16).toString("hex");
+  const hashedPassword = scryptSync(password, salt, 32).toString("hex");
+  return `${hashedPassword}${salt}`;
+};
+
+export const comparePasswords = (inputPassword: string, hashedPasswordWithSalt: string): boolean => {
+  const salt = hashedPasswordWithSalt.slice(-32);
+  const hashedPassword = hashedPasswordWithSalt.slice(0, -32);
+  const hashedInputPassword = scryptSync(inputPassword, salt, 32).toString("hex");
+  return hashedPassword === hashedInputPassword;
+};
+
+
 
 export async function createUser(newUser: User): Promise<void> {
   // checks if provided email already exists, if not -> new user gets created
@@ -51,6 +88,20 @@ export async function getUsers(): Promise<User[]> {
   return rows as User[];
 }
 
+export async function getUsersByChatId(chat_id: number, currentUserId: number): Promise<User[]> {
+  const [rows] = await connection.query("SELECT * FROM chat_users WHERE chat_id = ? AND user_id != ?", [chat_id, currentUserId]);
+  const users: User[] = [];
+
+  for (const row of rows) {
+    const user = await getUserById(row.user_id);
+    if (user) {
+      users.push(user);
+    }
+  }
+
+  return users;
+}
+
 export async function getUserById(id: number): Promise<User | null> {
   const [rows] = await connection.execute("SELECT * FROM users WHERE id = ?", [
     id,
@@ -61,14 +112,18 @@ export async function getUserById(id: number): Promise<User | null> {
   return rows[0] as User;
 }
 
-export async function getUserByMail(email: string): Promise<User | null> {
-  const [rows] = await connection.execute("SELECT * FROM users WHERE email = ?", [
-    email,
-  ]);
-  if (!rows) {
-    return null;
+export async function getUserByMail (email: string): Promise<User> {
+  try {
+    const [rows]: any = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
+    if(rows.length > 0) {
+      const user = rows[0];
+      return user;
+    }
+    throw new Error('No user found');
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to get user');
   }
-  return rows[0] as User;
 }
 
 export async function getMessagesByChatId(chatId: number): Promise<Message[]> {
@@ -96,17 +151,39 @@ const [rows] = await connection.execute(
   return users;
 }
 
-
 // ALL WORK TILL HERE
 
 
-export async function createChat(chatName: String): Promise<Chat> {
+export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
+  const [rows] = await connection.execute(
+    "INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)",
+    [newChatUser.user.id, newChatUser.chat_id]
+  );
+  return rows as ChatUser;
+}
+
+export async function createChat(chatName: String, adminId: number, isRoom: boolean): Promise<Chat> {
   const [result] = await connection.execute(
-    "INSERT INTO chats (name) VALUES (?)",
-    [chatName]
+    "INSERT INTO chats (name, chat_admin_id, isRoom) VALUES (?, ?, ?)",
+    [chatName, adminId, isRoom]
   );
   return result as Chat;
 }
+
+export async function changeProfilePicture(userId: number, image: string) {
+  const [result] = await connection.execute(
+    "UPDATE users SET profile_picture = ? WHERE id = ?", [image,userId]);
+  return result;
+}
+
+export async function changeChatPicture(chatId: number, image: string) {
+  const [result] = await connection.execute(
+    "UPDATE chats SET chat_picture = ? WHERE id = ?", [image, chatId]);
+  return result;
+}
+
+
+
 
 export async function deleteChat(chatId: Number): Promise<String> {
   const [res] = await connection.query(
@@ -168,7 +245,7 @@ export async function getChatById(id: number): Promise<Chat | String> {
 
 export async function getChatsByUserId(user_id: number) : Promise <Chat[] | String> {
   const [rows] = await connection.execute
-  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
+  ("SELECT c.id, c.name, c.created_on, c.last_message, c.last_message_sent, c.chat_admin_id, c.isRoom, c.chat_picture FROM chats c, chat_users cu WHERE cu.chat_id = c.id AND cu.user_id = ?", [user_id]);
   if (rows.length === 0) {
     return "No Chats for given User found";
   }
@@ -216,14 +293,6 @@ export async function getMessageById(id: number): Promise<Message | string> {
 }
 
 
-
-export async function createChatUser(newChatUser: ChatUser): Promise<ChatUser> {
-  const [rows] = await connection.execute(
-    "INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)",
-    [newChatUser.user_id, newChatUser.chat_id]
-  );
-  return rows as ChatUser;
-}
 
 export async function getAllMessagesForUser(user: User): Promise<Message[]> {
   let result: Message;

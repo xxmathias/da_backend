@@ -1,8 +1,8 @@
 export interface User {
   id?: number;
   username?: string;
-  email: string;
-  password: string;
+  email?: string;
+  password?: string;
   is_admin?: number;
   created_on?: string;
 }
@@ -22,10 +22,8 @@ export interface Message {
 }
 
 export interface ChatUser {
-  id: number;
-  user_id?: number;
-  chat_id?: number;
-  username: string;
-  password: string;
-  email: string;
+
+  chat_id: number;
+  user: User;
+
 }

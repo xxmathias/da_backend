@@ -11,5 +11,5 @@ In mysql user anlegen und eine DB namens viktig. Dem User alle Rechte auf diese 
 
 PORT= // Port from MySQL
 HOST= // ip addr where MySQL is running
-USER= // DB user
+DB_USER= // DB user
 PASSWORD= // DB user's password

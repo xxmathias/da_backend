@@ -1,10 +1,8 @@
-
-
 [
     {
-        "username": "user",
-        "password": "password",
-        "email": "user@example.com",
+        "username": "user1",
+        "password": "password1",
+        "email": "user1@example.com",
         "is_admin": 1,
         "profile_picture": "url1"
     },
@@ -13,6 +11,95 @@
         "password": "password2",
         "email": "user2@example.com",
         "is_admin": 0,
-        "profile_picture": "url2"
+        "profile_picture": "url2",
+        "chats": [
+            {
+                "name": "1AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user3",
+        "password": "password3",
+        "email": "user3@example.com",
+        "is_admin": 0,
+        "profile_picture": "url3",
+        "chats": [
+            {
+                "name": "1AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user4",
+        "password": "password4",
+        "email": "user4@example.com",
+        "is_admin": 0,
+        "profile_picture": "url4",
+        "chats": [
+            {
+                "name": "2AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user5",
+        "password": "password5",
+        "email": "user5@example.com",
+        "is_admin": 0,
+        "profile_picture": "url5",
+        "chats": [
+            {
+                "name": "2AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user6",
+        "password": "password6",
+        "email": "user6@example.com",
+        "is_admin": 0,
+        "profile_picture": "url6",
+        "chats": [
+            {
+                "name": "3AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user7",
+        "password": "password7",
+        "email": "user7@example.com",
+        "is_admin": 0,
+        "profile_picture": "url7",
+        "chats": [
+            {
+                "name": "3AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user8",
+        "password": "password8",
+        "email": "user8@example.com",
+        "is_admin": 0,
+        "profile_picture": "url8",
+        "chats": [
+            {
+                "name": "4AKIFT"
+            }
+        ]
+    },
+    {
+        "username": "user9",
+        "password": "password9",
+        "email": "user9@example.com",
+        "is_admin": 0,
+        "profile_picture": "url9",
+        "chats": [
+            {
+                "name": "4AKIFT"
+            }
+        ]
     }
 ]

@@ -74,31 +74,75 @@ async function createTables() {
 }
 
 async function insertUsers() {
-  // inserting dummy data to simulate LDAP
   try {
     const [rows] = await connection.query("SELECT COUNT(*) AS count FROM users");
 
     if (rows[0].count > 0) {
       return;
     }
-      const filePath = path.join(__dirname, 'users.json'); // this file is in the root dir of this project and contains a simulation of LDAP users
-      const fileData = fs.readFileSync(filePath, 'utf8');
-      const users = JSON.parse(fileData);
 
-      // Iterating through each user to insert in the database
-      for (let user of users) {
-          const hashedPassword = getHashedPassword(user.password);
-          await connection.execute(`
-              INSERT INTO users (username, password, email, is_admin, profile_picture)
-              VALUES (?, ?, ?, ?, ?)`,
-              [user.username, hashedPassword, user.email, user.is_admin, user.profile_picture]
-          );
+    const filePath = path.join(__dirname, 'users.json');
+    const fileData = fs.readFileSync(filePath, 'utf8');
+    const users = JSON.parse(fileData);
+
+    let user1Id = null;
+    const chatIds = {};
+
+    // Insert users and get user1Id
+    for (let user of users) {
+      const hashedPassword = getHashedPassword(user.password);
+      const [result] = await connection.execute(
+        'INSERT INTO users (username, password, email, is_admin, profile_picture) VALUES (?, ?, ?, ?, ?)',
+        [user.username, hashedPassword, user.email, user.is_admin, user.profile_picture]
+      );
+
+      const userId = result.insertId;
+
+      if (user.username === 'user1') {
+        user1Id = userId;
       }
-      console.log("Users inserted successfully");
+
+      // Insert chats and map chat names to chat IDs
+      if (user.chats) {
+        for (const chat of user.chats) {
+          if (!chatIds[chat.name]) {
+            const [chatResult] = await connection.execute(
+              'INSERT INTO chats (name, chat_admin_id, isRoom) VALUES (?, ?, 1)',
+              [chat.name, user1Id]
+            );
+
+            chatIds[chat.name] = chatResult.insertId;
+
+            // Insert user1 into chat_users for each chat
+            await connection.execute(
+              'INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)',
+              [user1Id, chatIds[chat.name]]
+            );
+          }
+
+          // Insert other users into chat_users if they are not user1
+          if (userId !== user1Id) {
+            await connection.execute(
+              'INSERT INTO chat_users (user_id, chat_id) VALUES (?, ?)',
+              [userId, chatIds[chat.name]]
+            );
+          }
+        }
+      }
+    }
+
+    console.log("Users and chats inserted successfully");
   } catch (error) {
-      console.error("Error inserting users:", error);
+    console.error("Error inserting users and chats:", error);
   }
 }
+
+
+
+
+
+
+
 
 (async () => {
   await createTables();

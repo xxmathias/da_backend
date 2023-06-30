@@ -1,0 +1,18 @@
+
+
+[
+    {
+        "username": "user",
+        "password": "password",
+        "email": "user@example.com",
+        "is_admin": 1,
+        "profile_picture": "url1"
+    },
+    {
+        "username": "user2",
+        "password": "password2",
+        "email": "user2@example.com",
+        "is_admin": 0,
+        "profile_picture": "url2"
+    }
+]

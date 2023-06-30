@@ -2,23 +2,107 @@ import express, { Request, Response} from "express";
 import socketio from "socket.io";
 import cors from 'cors';
 import session from 'express-session';
-import { connection, createUser, validateCredentials, getUserById, getUsers, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId, comparePasswords, getHashedPassword, changeProfilePicture, changeChatPicture } from './utils/database/dbTools'
+import { connection, createUser, validateCredentials, getUserById, getUserByMail, getMessagesByChatId, getChatsByUserId, sendMessage, createChat, addUserToChat, removeUserFromChat, deleteChat, getMatchingUser, createChatUser, validatePassword, getUsersByChatId, comparePasswords, getHashedPassword, changeProfilePicture, changeChatPicture } from './utils/database/dbTools'
 import { Chat, ChatUser, Message, User } from './index.interface'
 import bodyParser from 'body-parser';
-import multer from 'multer';
+import fs from "fs";
+import path from "path";
+require('dotenv').config();
 declare module "express-session" {
   interface SessionData {
     user: User;
   }
 }
+
 async function createTables() {
-  await connection.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER AUTO_INCREMENT PRIMARY KEY,username VARCHAR(256),password VARCHAR(255) NOT NULL,email VARCHAR(320),is_admin INTEGER DEFAULT 0 NOT NULL,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP, profile_picture MEDIUMTEXT);');
-  await connection.execute('CREATE TABLE IF NOT EXISTS chats (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(256),last_message MEDIUMTEXT,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,last_message_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,chat_admin_id INT,isRoom BOOLEAN,CONSTRAINT fk_chat_admin_id FOREIGN KEY (chat_admin_id) REFERENCES users(id), chat_picture MEDIUMTEXT);');
-  await connection.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,msg_type INTEGER,msg MEDIUMTEXT,created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
-  await connection.execute('CREATE TABLE IF NOT EXISTS chat_users (id INTEGER AUTO_INCREMENT PRIMARY KEY,user_id INTEGER NOT NULL,chat_id INTEGER NOT NULL,CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id));');
+  // creates tables if they exist and afterwards calls insertUsers() to fill the users table with example data
+  try {
+      await connection.execute(`
+          CREATE TABLE IF NOT EXISTS users (
+              id INTEGER AUTO_INCREMENT PRIMARY KEY,
+              username VARCHAR(256),
+              password VARCHAR(255) NOT NULL,
+              email VARCHAR(320),
+              is_admin INTEGER DEFAULT 0 NOT NULL,
+              created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              profile_picture MEDIUMTEXT
+          );
+      `);
+
+      await connection.execute(`
+          CREATE TABLE IF NOT EXISTS chats (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              name VARCHAR(256),
+              last_message MEDIUMTEXT,
+              created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              last_message_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              chat_admin_id INT,
+              isRoom BOOLEAN,
+              chat_picture MEDIUMTEXT,
+              CONSTRAINT fk_chat_admin_id FOREIGN KEY (chat_admin_id) REFERENCES users(id)
+          );
+      `);
+
+      await connection.execute(`
+          CREATE TABLE IF NOT EXISTS messages (
+              id INTEGER AUTO_INCREMENT PRIMARY KEY,
+              user_id INTEGER NOT NULL,
+              chat_id INTEGER NOT NULL,
+              msg_type INTEGER,
+              msg MEDIUMTEXT,
+              created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id),
+              CONSTRAINT fk_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id)
+          );
+      `);
+
+      await connection.execute(`
+          CREATE TABLE IF NOT EXISTS chat_users (
+              id INTEGER AUTO_INCREMENT PRIMARY KEY,
+              user_id INTEGER NOT NULL,
+              chat_id INTEGER NOT NULL,
+              CONSTRAINT fk_cu_user_id FOREIGN KEY (user_id) REFERENCES users(id),
+              CONSTRAINT fk_cu_chat_id FOREIGN KEY (chat_id) REFERENCES chats(id)
+          );
+      `);
+
+      await insertUsers();
+
+  } catch (error) {
+      console.error("Error creating tables:", error);
+  }
 }
 
-createTables();
+async function insertUsers() {
+  // inserting dummy data to simulate LDAP
+  try {
+    const [rows] = await connection.query("SELECT COUNT(*) AS count FROM users");
+
+    if (rows[0].count > 0) {
+      return;
+    }
+      const filePath = path.join(__dirname, 'users.json'); // this file is in the root dir of this project and contains a simulation of LDAP users
+      const fileData = fs.readFileSync(filePath, 'utf8');
+      const users = JSON.parse(fileData);
+
+      // Iterating through each user to insert in the database
+      for (let user of users) {
+          const hashedPassword = getHashedPassword(user.password);
+          await connection.execute(`
+              INSERT INTO users (username, password, email, is_admin, profile_picture)
+              VALUES (?, ?, ?, ?, ?)`,
+              [user.username, hashedPassword, user.email, user.is_admin, user.profile_picture]
+          );
+      }
+      console.log("Users inserted successfully");
+  } catch (error) {
+      console.error("Error inserting users:", error);
+  }
+}
+
+(async () => {
+  await createTables();
+})();
 
 const app = express();
 app.set("port", process.env.PORT || 8080);
@@ -73,8 +157,6 @@ app.get("/getChatsByUserId/:userId", (req: Request, res: Response) => {
 })
 
 app.post("/createChat", (req: Request, res: Response) => {
-  // NEEDS TEST
-  // console.log("endpoint hit")
   const promCreateChat = new Promise((resolve, reject) => {
     resolve(createChat(req.body.chatName, req.body.creatorId, req.body.selectedUser.length > 1));
     resolve(console.log("createChat body", req.body.selectedUser))
@@ -86,16 +168,13 @@ app.post("/createChat", (req: Request, res: Response) => {
     req.body.selectedUser.forEach((user: User)=>{
       //@ts-ignore
       createChatUser({user: user, chat_id: res.insertId as number} )
-      // console.log({user: user, chat_id: res.insertId})
     })
   })
 })
 
 app.post("/getUserByChatId", (req, res) => {
-  // console.log("endpoint hit");
   const getUserPromise = new Promise((resolve, reject) => {
     resolve(getUsersByChatId(req.body.chat_id, req.body.currentUserId));
-    // resolve(console.log("createChat body", req.body.selectedUser))
   });
 
   getUserPromise
@@ -120,7 +199,6 @@ app.post("/deleteChat", (req: Request, res: Response) => {
 })
 
 app.post("/addUserToChat", (req: Request, res: Response) => {
-  // NEEDS TEST
   const promAddUserToChat = new Promise((resolve, reject) => {
     resolve(addUserToChat(req.body.userId, req.body.chatId));
   })
@@ -167,8 +245,8 @@ app.post('/login', async (req: Request, res: Response) => {
 
 
 app.post('/changePassword', async (req, res) => {
+  // user can change their password on the profile page, password must meet specific requirements. password is hashed and stored in db.
   const { oldPassword, newPassword, email } = req.body;
-
   try {
     const user: User = await getUserByMail(email);
 
@@ -283,8 +361,6 @@ io.on("User", (socket: socketio.Socket) =>{
 const server = http.listen(8080, function() {
   console.log("listening on *:8080");
 });
-
-
 
   // TO HASH ALL PASSWORDS IN DB
 /*   const hashAllPasswords = async () => {

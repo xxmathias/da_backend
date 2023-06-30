@@ -1,12 +1,14 @@
 import { User, Chat, Message, ChatUser } from "../../index.interface";
 import mysql from "mysql2";
 import { scryptSync, randomBytes } from 'crypto';
+require('dotenv').config();
+
 
 export const connection = mysql.createPool({
-    host: "100.103.227.61",
-    user: "diplom",
-    password: "password",
-    database: "test",
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: "viktig",
   }).promise();
 
 export const validateCredentials = async (user: User): Promise<boolean> => {

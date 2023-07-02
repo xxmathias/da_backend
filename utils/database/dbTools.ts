@@ -172,9 +172,8 @@ export async function createChat(chatName: String, adminId: number, isRoom: bool
   return result as Chat;
 }
 
-export async function changeProfilePicture(userId: number, image: string) {
-  const [result] = await connection.execute(
-    "UPDATE users SET profile_picture = ? WHERE id = ?", [image,userId]);
+export async function changeProfilePicture(image: string, userId: any) {
+  const [result] = await connection.execute('UPDATE users SET profile_picture = ? WHERE id = ?', [image, userId]);
   return result;
 }
 
@@ -184,6 +183,10 @@ export async function changeChatPicture(chatId: number, image: string) {
   return result;
 }
 
+export async function getProfilePicture(userId: any) {
+  const [result] = await connection.execute('SELECT profile_picture FROM users WHERE id = ?', [userId]);
+  return result;
+}
 
 
 

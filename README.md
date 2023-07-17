@@ -1,7 +1,8 @@
 # Viktig Backend
 
 This README document guides you through setting up your local development environment for the backend of the Viktig project.
-Pre-setup
+
+## Pre-setup
 
 Before setting up the MySQL database, you need to clone the repository, set the Node.js version, and install the dependencies:
 1. Clone the repository
@@ -25,9 +26,13 @@ Install the necessary dependencies using yarn:
 ```bash
 yarn
 ```
-Step 1: Setting up MySQL Database
+
+---
 
 After the pre-setup is complete, follow these steps to setup your MySQL database:
+
+Step 1: Setting up MySQL Database
+
 1. Access MySQL shell
 
 ```bash

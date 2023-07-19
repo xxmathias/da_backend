@@ -86,15 +86,14 @@ HOST=127.0.0.1
 DB_USER=<your_username>
 PASSWORD=<your_password>
 ```
-Note: Ensure .env is added to your .gitignore file to prevent accidental exposure.
 
 After following these steps, the backend application should be ready to connect to your MySQL server.
 
 
-### The users you want to create should be entered in the users.json following the same syntax as the example users.
+### The users you want to create initialy should be entered in the users.json, following the same syntax as the example users.
 
 
-And to run it:
+To run it:
 
 ```bash
 yarn dev

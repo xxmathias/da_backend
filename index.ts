@@ -20,6 +20,7 @@ const defaultProfilePicture = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASw
 async function createTables() {
   // creates tables if they exist and afterwards calls insertUsers() to fill the users table with example data
   try {
+    console.log("Attempting to create necessary tables...");
       await connection.execute(`
           CREATE TABLE IF NOT EXISTS users (
               id INTEGER AUTO_INCREMENT PRIMARY KEY,
@@ -78,9 +79,11 @@ async function createTables() {
 
 async function insertUsers() {
   try {
+    console.log("Checking for existing users...");
     const [rows] = await connection.query("SELECT COUNT(*) AS count FROM users");
 
     if (rows[0].count > 0) {
+      console.log("Users already exist\nBackend is ready ✅");
       return;
     }
 
@@ -93,6 +96,7 @@ async function insertUsers() {
 
     // Insert users and get user1Id
     for (let user of users) {
+      console.log(`Inserting user: ${user.username} ...`);
       const hashedPassword = getHashedPassword(user.password);
       const [result] = await connection.execute(
         'INSERT INTO users (username, password, email, is_admin) VALUES (?, ?, ?, ?)',
@@ -109,6 +113,7 @@ async function insertUsers() {
       if (user.chats) {
         for (const chat of user.chats) {
           if (!chatIds[chat.name]) {
+            console.log(`Inserting chat: ${chat.name} ...`);
             const [chatResult] = await connection.execute(
               'INSERT INTO chats (name, chat_admin_id, isRoom) VALUES (?, ?, 1)',
               [chat.name, user1Id]
@@ -134,7 +139,7 @@ async function insertUsers() {
       }
     }
 
-    console.log("Users and chats inserted successfully");
+    console.log("Users and chats inserted successfully\n Backend setup finished & ready to go ✅");
   } catch (error) {
     console.error("Error inserting users and chats:", error);
   }

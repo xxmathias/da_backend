@@ -10,7 +10,7 @@ Before setting up the MySQL database, you need to clone the repository, set the 
 Clone the repository using the following command:
 
 ```bash
-git clone git@github.com:Timxyx/Diplomarbeit.git
+git clone https://github.com/Satalicious/da_backend.git
 ```
 2. Set Node.js version
 
